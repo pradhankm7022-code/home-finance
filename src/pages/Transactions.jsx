@@ -104,8 +104,16 @@ function TransactionForm({ initial, onSave, onCancel, error, householdId }) {
   const [form, setForm] = useState(initial || {
     description: '', amount: '', category: '', type: 'expense', date: new Date().toISOString().slice(0, 10)
   })
+  const [saving, setSaving] = useState(false)
 
   function set(k, v) { setForm(f => ({ ...f, [k]: v })) }
+
+  async function handleSave() {
+    if (saving) return
+    setSaving(true)
+    await onSave(form)
+    setSaving(false)
+  }
 
   return (
     <div className="fixed inset-0 bg-black/40 z-50 flex items-end sm:items-center justify-center p-4">
@@ -171,10 +179,11 @@ function TransactionForm({ initial, onSave, onCancel, error, householdId }) {
 
         <button
           type="button"
-          onClick={() => onSave(form)}
-          className="w-full bg-blue-600 text-white py-2.5 rounded-xl font-medium text-sm hover:bg-blue-700 transition-colors"
+          onClick={handleSave}
+          disabled={saving}
+          className="w-full bg-blue-600 text-white py-2.5 rounded-xl font-medium text-sm hover:bg-blue-700 transition-colors disabled:opacity-60"
         >
-          {initial ? 'Update' : 'Add Transaction'}
+          {saving ? 'Saving…' : initial ? 'Update' : 'Add Transaction'}
         </button>
       </div>
     </div>
