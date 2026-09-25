@@ -28,7 +28,8 @@ export default function Login() {
     <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
       <div className="w-full max-w-sm bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
         <h1 className="text-2xl font-bold text-blue-600 mb-1">ManeLekka</h1>
-        <p className="text-gray-500 text-sm mb-6">Sign in to your account</p>
+        <p className="text-gray-500 text-sm mb-2">Sign in to your account</p>
+        <p className="text-gray-400 text-xs mb-6 leading-relaxed">Track your family's income and expenses in one place. Add transactions, invite family members, and see where your money goes.</p>
 
         {error && (
           <div className="bg-red-50 text-red-600 text-sm px-3 py-2 rounded-lg mb-4">{error}</div>
