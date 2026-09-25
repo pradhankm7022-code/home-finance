@@ -108,8 +108,9 @@ function PieChartCard({ title, data, colors, total, fmt }) {
 }
 
 export default function Reports() {
-  const { profile } = useAuth()
+  const { profile, user } = useAuth()
   const [mode, setMode] = useState('monthly')
+  const [scope, setScope] = useState('household')
   const [month, setMonth] = useState(() => new Date().toISOString().slice(0, 7))
   const [year, setYear] = useState(() => String(new Date().getFullYear()))
   const [transactions, setTransactions] = useState([])
@@ -147,21 +148,25 @@ export default function Reports() {
 
   const fmt = (n) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(n)
 
-  const income = transactions.filter(t => t.type === 'income').reduce((s, t) => s + Number(t.amount), 0)
-  const expenses = transactions.filter(t => t.type === 'expense').reduce((s, t) => s + Number(t.amount), 0)
+  const visibleTransactions = scope === 'mine'
+    ? transactions.filter(t => t.user_id === user.id)
+    : transactions
 
-  const incomeCategories = [...new Set(transactions.filter(t => t.type === 'income').map(t => t.category))].sort()
-  const expenseCategories = [...new Set(transactions.filter(t => t.type === 'expense').map(t => t.category))].sort()
+  const income = visibleTransactions.filter(t => t.type === 'income').reduce((s, t) => s + Number(t.amount), 0)
+  const expenses = visibleTransactions.filter(t => t.type === 'expense').reduce((s, t) => s + Number(t.amount), 0)
+
+  const incomeCategories = [...new Set(visibleTransactions.filter(t => t.type === 'income').map(t => t.category))].sort()
+  const expenseCategories = [...new Set(visibleTransactions.filter(t => t.type === 'expense').map(t => t.category))].sort()
 
   const byIncomeCategory = Object.entries(
-    transactions.filter(t => t.type === 'income').reduce((acc, t) => {
+    visibleTransactions.filter(t => t.type === 'income').reduce((acc, t) => {
       acc[t.category] = (acc[t.category] || 0) + Number(t.amount)
       return acc
     }, {})
   ).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value)
 
   const byExpenseCategory = Object.entries(
-    transactions.filter(t => t.type === 'expense').reduce((acc, t) => {
+    visibleTransactions.filter(t => t.type === 'expense').reduce((acc, t) => {
       acc[t.category] = (acc[t.category] || 0) + Number(t.amount)
       return acc
     }, {})
@@ -173,7 +178,7 @@ export default function Reports() {
   return (
     <div className="p-4 max-w-lg mx-auto">
       {/* Header */}
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-3">
         <h2 className="text-xl font-bold text-gray-800">Reports</h2>
         <div className="flex rounded-xl bg-gray-100 p-1">
           {['monthly', 'yearly'].map(m => (
@@ -188,6 +193,21 @@ export default function Reports() {
             </button>
           ))}
         </div>
+      </div>
+
+      {/* Scope toggle */}
+      <div className="flex rounded-xl bg-gray-100 p-1 mb-4">
+        {[['household', 'Household'], ['mine', 'Mine']].map(([val, label]) => (
+          <button
+            key={val}
+            onClick={() => setScope(val)}
+            className={`flex-1 py-1.5 text-xs font-medium rounded-lg transition-colors ${
+              scope === val ? 'bg-white shadow text-blue-600' : 'text-gray-500'
+            }`}
+          >
+            {label}
+          </button>
+        ))}
       </div>
 
       {/* Date picker */}
@@ -248,7 +268,7 @@ export default function Reports() {
             <div className="mt-3">
               <MonthBarChart
                 title=""
-                transactions={transactions}
+                transactions={visibleTransactions}
                 type="expense"
                 categoryFilter={expenseCatFilter}
                 fmt={fmt}
@@ -269,7 +289,7 @@ export default function Reports() {
             <div className="mt-3">
               <MonthBarChart
                 title=""
-                transactions={transactions}
+                transactions={visibleTransactions}
                 type="income"
                 categoryFilter={incomeCatFilter}
                 fmt={fmt}
@@ -297,7 +317,7 @@ export default function Reports() {
         />
       </div>
 
-      {transactions.length === 0 && (
+      {visibleTransactions.length === 0 && (
         <div className="text-center py-10 text-gray-400 text-sm">
           No transactions for this {mode === 'monthly' ? 'month' : 'year'}
         </div>
