@@ -1,5 +1,5 @@
 import { useAuth } from '../context/AuthContext'
-import { Copy, Check, LogOut as LeaveIcon, Download, Share2 } from 'lucide-react'
+import { Copy, Check, LogOut as LeaveIcon, Download, Share2, Trash2 } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
@@ -10,8 +10,13 @@ export default function Settings() {
   const [copied, setCopied] = useState(false)
   const [leaving, setLeaving] = useState(false)
   const [confirmLeave, setConfirmLeave] = useState(false)
+  const [confirmDelete, setConfirmDelete] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+  const [deleteError, setDeleteError] = useState('')
   const [installPrompt, setInstallPrompt] = useState(null)
   const [isInstalled, setIsInstalled] = useState(false)
+
+  const isCreator = profile?.households?.created_by === user?.id
 
   useEffect(() => {
     function handleBeforeInstall(e) {
@@ -57,6 +62,37 @@ export default function Settings() {
     }
     setLeaving(false)
     setConfirmLeave(false)
+  }
+
+  async function deleteHousehold() {
+    setDeleting(true)
+    setDeleteError('')
+    const householdId = profile?.household_id
+    try {
+      const { error: txErr } = await supabase
+        .from('transactions')
+        .delete()
+        .eq('household_id', householdId)
+      if (txErr) throw txErr
+
+      const { error: membersErr } = await supabase
+        .from('profiles')
+        .update({ household_id: null })
+        .eq('household_id', householdId)
+      if (membersErr) throw membersErr
+
+      const { error: hErr } = await supabase
+        .from('households')
+        .delete()
+        .eq('id', householdId)
+      if (hErr) throw hErr
+
+      await fetchProfile(user.id)
+      navigate('/setup-household', { replace: true })
+    } catch (err) {
+      setDeleteError(err.message)
+      setDeleting(false)
+    }
   }
 
   return (
@@ -119,6 +155,42 @@ export default function Settings() {
                 {leaving ? 'Leaving…' : 'Yes, Leave'}
               </button>
             </div>
+          </div>
+        )}
+
+        {/* Delete household — creator only */}
+        {isCreator && (
+          <div className="mt-3">
+            {!confirmDelete ? (
+              <button
+                onClick={() => setConfirmDelete(true)}
+                className="w-full flex items-center justify-center gap-2 text-red-500 bg-red-50 py-2.5 rounded-xl text-sm font-medium hover:bg-red-100 transition-colors"
+              >
+                <Trash2 size={16} />
+                Delete Household
+              </button>
+            ) : (
+              <div className="bg-red-50 rounded-xl p-4 space-y-3">
+                <p className="text-sm text-red-700 font-medium">Delete <strong>{profile?.households?.name}</strong>?</p>
+                <p className="text-xs text-red-500">This will permanently delete all transactions and remove all members. This cannot be undone.</p>
+                {deleteError && <p className="text-xs text-red-600">{deleteError}</p>}
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => { setConfirmDelete(false); setDeleteError('') }}
+                    className="flex-1 py-2 rounded-xl text-sm font-medium bg-white border border-gray-200 text-gray-600 hover:bg-gray-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={deleteHousehold}
+                    disabled={deleting}
+                    className="flex-1 py-2 rounded-xl text-sm font-medium bg-red-500 text-white hover:bg-red-600 disabled:opacity-60"
+                  >
+                    {deleting ? 'Deleting…' : 'Yes, Delete'}
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>
