@@ -39,7 +39,6 @@ function PieChartCard({ title, data, colors, total, fmt }) {
           <Tooltip formatter={(v) => fmt(v)} />
         </PieChart>
       </ResponsiveContainer>
-      {/* Legend */}
       <div className="space-y-1 mt-1">
         {data.map((item, i) => (
           <div key={item.name} className="flex items-center justify-between text-xs">
@@ -57,17 +56,25 @@ function PieChartCard({ title, data, colors, total, fmt }) {
 
 export default function Reports() {
   const { profile } = useAuth()
-  const [transactions, setTransactions] = useState([])
+  const [mode, setMode] = useState('monthly')
   const [month, setMonth] = useState(() => new Date().toISOString().slice(0, 7))
+  const [year, setYear] = useState(() => String(new Date().getFullYear()))
+  const [transactions, setTransactions] = useState([])
 
   useEffect(() => {
     if (!profile?.household_id) return
     fetchTransactions()
-  }, [profile?.household_id, month])
+  }, [profile?.household_id, mode, month, year])
 
   async function fetchTransactions() {
-    const start = `${month}-01`
-    const end = new Date(new Date(start).getFullYear(), new Date(start).getMonth() + 1, 1).toISOString().slice(0, 10)
+    let start, end
+    if (mode === 'monthly') {
+      start = `${month}-01`
+      end = new Date(new Date(start).getFullYear(), new Date(start).getMonth() + 1, 1).toISOString().slice(0, 10)
+    } else {
+      start = `${year}-01-01`
+      end = `${Number(year) + 1}-01-01`
+    }
     const { data } = await supabase
       .from('transactions')
       .select('*')
@@ -77,9 +84,10 @@ export default function Reports() {
     setTransactions(data || [])
   }
 
+  const fmt = (n) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(n)
+
   const income = transactions.filter(t => t.type === 'income').reduce((s, t) => s + Number(t.amount), 0)
   const expenses = transactions.filter(t => t.type === 'expense').reduce((s, t) => s + Number(t.amount), 0)
-  const fmt = (n) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(n)
 
   const byIncomeCategory = Object.entries(
     transactions.filter(t => t.type === 'income').reduce((acc, t) => {
@@ -95,25 +103,67 @@ export default function Reports() {
     }, {})
   ).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value)
 
-  const summaryData = [
-    { name: 'Income', amount: income },
-    { name: 'Expenses', amount: expenses },
-    { name: 'Savings', amount: Math.max(0, income - expenses) },
-  ]
+  const barData = (() => {
+    const cats = {}
+    transactions.forEach(t => {
+      if (!cats[t.category]) cats[t.category] = { name: t.category, income: 0, expense: 0 }
+      cats[t.category][t.type] = (cats[t.category][t.type] || 0) + Number(t.amount)
+    })
+    return Object.values(cats).sort((a, b) => (b.income + b.expense) - (a.income + a.expense))
+  })()
+
+  const currentYear = new Date().getFullYear()
+  const yearOptions = Array.from({ length: 5 }, (_, i) => String(currentYear - i))
 
   return (
     <div className="p-4 max-w-lg mx-auto">
+      {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-xl font-bold text-gray-800">Reports</h2>
-        <input
-          type="month"
-          value={month}
-          onChange={e => setMonth(e.target.value)}
-          className="border border-gray-200 rounded-xl px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 w-40"
-        />
+
+        {/* Mode toggle */}
+        <div className="flex rounded-xl bg-gray-100 p-1">
+          {['monthly', 'yearly'].map(m => (
+            <button
+              key={m}
+              onClick={() => setMode(m)}
+              className={`px-3 py-1 text-xs font-medium rounded-lg capitalize transition-colors ${
+                mode === m ? 'bg-white shadow text-blue-600' : 'text-gray-500'
+              }`}
+            >
+              {m}
+            </button>
+          ))}
+        </div>
       </div>
 
-      {/* Summary cards */}
+      {/* Date picker */}
+      <div className="mb-4">
+        {mode === 'monthly' ? (
+          <input
+            type="month"
+            value={month}
+            onChange={e => setMonth(e.target.value)}
+            className="border border-gray-200 rounded-xl px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 w-40"
+          />
+        ) : (
+          <div className="flex gap-2 flex-wrap">
+            {yearOptions.map(y => (
+              <button
+                key={y}
+                onClick={() => setYear(y)}
+                className={`px-4 py-1.5 rounded-xl text-sm font-medium transition-colors ${
+                  year === y ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                }`}
+              >
+                {y}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Stat tiles */}
       <div className="grid grid-cols-3 gap-3 mb-6">
         <div className="bg-green-50 rounded-xl p-3 text-center">
           <p className="text-xs text-gray-500 mb-1">Income</p>
@@ -129,22 +179,25 @@ export default function Reports() {
         </div>
       </div>
 
-      {/* Bar chart */}
+      {/* Bar chart — income + expense per category */}
       <div className="bg-white rounded-2xl border border-gray-100 p-4 mb-4">
-        <h3 className="text-sm font-semibold text-gray-700 mb-3">Monthly Summary</h3>
-        <ResponsiveContainer width="100%" height={180}>
-          <BarChart data={summaryData} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
-            <XAxis dataKey="name" tick={{ fontSize: 11 }} />
-            <YAxis tick={{ fontSize: 11 }} />
-            <Tooltip formatter={(v) => fmt(v)} />
-            <Bar dataKey="amount" radius={[6, 6, 0, 0]}>
-              {summaryData.map((entry, i) => (
-                <Cell key={i} fill={['#10b981', '#ef4444', '#3b82f6'][i]} />
-              ))}
-            </Bar>
-          </BarChart>
-        </ResponsiveContainer>
+        <h3 className="text-sm font-semibold text-gray-700 mb-3">
+          {mode === 'monthly' ? 'Monthly' : 'Yearly'} by Category
+        </h3>
+        {barData.length === 0 ? (
+          <p className="text-xs text-gray-400 text-center py-6">No data</p>
+        ) : (
+          <ResponsiveContainer width="100%" height={200}>
+            <BarChart data={barData} margin={{ top: 0, right: 0, left: -20, bottom: 40 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
+              <XAxis dataKey="name" tick={{ fontSize: 10 }} angle={-35} textAnchor="end" interval={0} />
+              <YAxis tick={{ fontSize: 11 }} />
+              <Tooltip formatter={(v) => fmt(v)} />
+              <Bar dataKey="income" fill="#10b981" radius={[4, 4, 0, 0]} name="Income" />
+              <Bar dataKey="expense" fill="#ef4444" radius={[4, 4, 0, 0]} name="Expense" />
+            </BarChart>
+          </ResponsiveContainer>
+        )}
       </div>
 
       {/* Pie charts */}
@@ -166,7 +219,9 @@ export default function Reports() {
       </div>
 
       {transactions.length === 0 && (
-        <div className="text-center py-10 text-gray-400 text-sm">No transactions for this month</div>
+        <div className="text-center py-10 text-gray-400 text-sm">
+          No transactions for this {mode === 'monthly' ? 'month' : 'year'}
+        </div>
       )}
     </div>
   )
