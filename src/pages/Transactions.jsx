@@ -234,10 +234,23 @@ export default function Transactions() {
   async function fetchTransactions() {
     const { data, error } = await supabase
       .from('transactions')
-      .select('*, profiles(name)')
+      .select('*')
       .eq('household_id', profile.household_id)
       .order('date', { ascending: false })
-    if (!error) setTransactions(data || [])
+    if (error) { setLoading(false); return }
+
+    // Fetch names for all unique user_ids in this batch
+    const userIds = [...new Set((data || []).map(t => t.user_id).filter(Boolean))]
+    let nameMap = {}
+    if (userIds.length > 0) {
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, name')
+        .in('id', userIds)
+      profiles?.forEach(p => { nameMap[p.id] = p.name })
+    }
+
+    setTransactions((data || []).map(t => ({ ...t, creatorName: nameMap[t.user_id] || '' })))
     setLoading(false)
   }
 
@@ -341,7 +354,7 @@ export default function Transactions() {
             <div key={t.id} className="bg-white rounded-xl px-4 py-3 flex items-center justify-between border border-gray-100">
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-gray-800 truncate">{t.description || t.category}</p>
-                <p className="text-xs text-gray-400">{t.category} · {new Date(t.date).toLocaleDateString()} · {t.profiles?.name}</p>
+                <p className="text-xs text-gray-400">{t.category} · {new Date(t.date).toLocaleDateString()} · {t.creatorName}</p>
               </div>
               <div className="flex items-center gap-2 ml-2">
                 <span className={`font-semibold text-sm ${t.type === 'income' ? 'text-green-600' : 'text-red-500'}`}>
