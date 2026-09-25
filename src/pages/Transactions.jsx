@@ -234,10 +234,22 @@ export default function Transactions() {
   async function fetchTransactions() {
     const { data, error } = await supabase
       .from('transactions')
-      .select('*, profiles(name)')
+      .select('*')
       .eq('household_id', profile.household_id)
       .order('date', { ascending: false })
-    if (!error) setTransactions(data || [])
+    if (error) { setLoading(false); return }
+
+    const userIds = [...new Set((data || []).map(t => t.user_id).filter(Boolean))]
+    let nameMap = {}
+    if (userIds.length > 0) {
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('id, name')
+        .in('id', userIds)
+      profileData?.forEach(p => { nameMap[p.id] = p.name })
+    }
+
+    setTransactions((data || []).map(t => ({ ...t, profiles: { name: nameMap[t.user_id] || '' } })))
     setLoading(false)
   }
 
