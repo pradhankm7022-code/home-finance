@@ -196,6 +196,26 @@ export default function Transactions() {
     if (location.state?.openForm) setShowForm(true)
   }, [location.state])
 
+  // Push a fake history entry when form opens so back button closes it
+  useEffect(() => {
+    if (showForm) {
+      window.history.pushState({ modal: true }, '')
+    }
+  }, [showForm])
+
+  // Intercept back button while form is open
+  useEffect(() => {
+    function handlePopState(e) {
+      if (showForm) {
+        setShowForm(false)
+        setEditing(null)
+        setSaveError('')
+      }
+    }
+    window.addEventListener('popstate', handlePopState)
+    return () => window.removeEventListener('popstate', handlePopState)
+  }, [showForm])
+
   useEffect(() => {
     if (!profile?.household_id) return
     fetchTransactions()

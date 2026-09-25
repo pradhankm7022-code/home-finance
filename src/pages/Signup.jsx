@@ -21,7 +21,7 @@ export default function Signup() {
       const data = await signUp(email, password, name)
       // If session exists immediately, email confirmation is disabled — go straight in
       if (data?.session) {
-        navigate('/setup-household')
+        navigate('/setup-household', { replace: true })
       } else {
         // Email confirmation is enabled — show check email screen
         setEmailSent(true)
@@ -111,7 +111,7 @@ export default function Signup() {
 
         <p className="text-center text-sm text-gray-500 mt-4">
           Already have an account?{' '}
-          <Link to="/login" className="text-blue-600 font-medium">Sign in</Link>
+          <Link to="/login" replace className="text-blue-600 font-medium">Sign in</Link>
         </p>
       </div>
     </div>

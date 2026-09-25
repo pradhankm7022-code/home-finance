@@ -25,7 +25,7 @@ export default function Settings() {
       .eq('id', user.id)
     if (!error) {
       await fetchProfile(user.id)
-      navigate('/setup-household')
+      navigate('/setup-household', { replace: true })
     }
     setLeaving(false)
     setConfirmLeave(false)

@@ -108,7 +108,7 @@ export default function Dashboard() {
 
       {/* FAB */}
       <button
-        onClick={() => navigate('/transactions', { state: { openForm: true } })}
+        onClick={() => navigate('/transactions', { state: { openForm: true }, replace: true })}
         className="fixed bottom-20 right-4 bg-blue-600 text-white w-12 h-12 rounded-full flex items-center justify-center shadow-lg hover:bg-blue-700 transition-colors"
       >
         <Plus size={22} />

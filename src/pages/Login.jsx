@@ -16,7 +16,7 @@ export default function Login() {
     setLoading(true)
     try {
       await signIn(email, password)
-      navigate('/')
+      navigate('/', { replace: true })
     } catch (err) {
       setError(err.message)
     } finally {
@@ -68,7 +68,7 @@ export default function Login() {
 
         <p className="text-center text-sm text-gray-500 mt-4">
           Don't have an account?{' '}
-          <Link to="/signup" className="text-blue-600 font-medium">Sign up</Link>
+          <Link to="/signup" replace className="text-blue-600 font-medium">Sign up</Link>
         </p>
       </div>
     </div>

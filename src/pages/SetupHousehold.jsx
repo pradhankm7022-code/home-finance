@@ -15,6 +15,16 @@ export default function SetupHousehold() {
   const [myHouseholds, setMyHouseholds] = useState([])
   const [loadingHouseholds, setLoadingHouseholds] = useState(true)
 
+  // Push a fake entry so back press is interceptable
+  useEffect(() => {
+    window.history.pushState({ setupHousehold: true }, '')
+    function handlePopState() {
+      navigate('/', { replace: true })
+    }
+    window.addEventListener('popstate', handlePopState)
+    return () => window.removeEventListener('popstate', handlePopState)
+  }, [])
+
   useEffect(() => {
     fetchMyHouseholds()
   }, [user?.id])
@@ -40,7 +50,7 @@ export default function SetupHousehold() {
         .eq('id', user.id)
       if (pErr) throw pErr
       await fetchProfile(user.id)
-      navigate('/')
+      navigate('/', { replace: true })
     } catch (err) {
       setError(err.message)
     } finally {
@@ -70,7 +80,7 @@ export default function SetupHousehold() {
       if (!updateData || updateData.length === 0) throw new Error('Profile update returned no rows — profile may not exist for this user')
 
       await fetchProfile(user.id)
-      navigate('/')
+      navigate('/', { replace: true })
     } catch (err) {
       setError(err.message)
     } finally {
@@ -97,7 +107,7 @@ export default function SetupHousehold() {
       if (pErr) throw pErr
 
       await fetchProfile(user.id)
-      navigate('/')
+      navigate('/', { replace: true })
     } catch (err) {
       setError(err.message)
     } finally {
