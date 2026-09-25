@@ -178,36 +178,38 @@ export default function Reports() {
   return (
     <div className="p-4 max-w-lg mx-auto">
       {/* Header */}
-      <div className="flex items-center justify-between mb-3">
+      <div className="flex items-center justify-between mb-4">
         <h2 className="text-xl font-bold text-gray-800">Reports</h2>
-        <div className="flex rounded-xl bg-gray-100 p-1">
-          {['monthly', 'yearly'].map(m => (
-            <button
-              key={m}
-              onClick={() => setMode(m)}
-              className={`px-3 py-1 text-xs font-medium rounded-lg capitalize transition-colors ${
-                mode === m ? 'bg-white shadow text-blue-600' : 'text-gray-500'
-              }`}
-            >
-              {m}
-            </button>
-          ))}
+        <div className="flex gap-2">
+          {/* Scope toggle */}
+          <div className="flex rounded-xl bg-gray-100 p-1">
+            {[['household', 'Household'], ['mine', 'Mine']].map(([val, label]) => (
+              <button
+                key={val}
+                onClick={() => setScope(val)}
+                className={`px-3 py-1 text-xs font-medium rounded-lg transition-colors ${
+                  scope === val ? 'bg-white shadow text-blue-600' : 'text-gray-500'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          {/* Mode toggle */}
+          <div className="flex rounded-xl bg-gray-100 p-1">
+            {['monthly', 'yearly'].map(m => (
+              <button
+                key={m}
+                onClick={() => setMode(m)}
+                className={`px-3 py-1 text-xs font-medium rounded-lg capitalize transition-colors ${
+                  mode === m ? 'bg-white shadow text-blue-600' : 'text-gray-500'
+                }`}
+              >
+                {m}
+              </button>
+            ))}
+          </div>
         </div>
-      </div>
-
-      {/* Scope toggle */}
-      <div className="flex rounded-xl bg-gray-100 p-1 mb-4">
-        {[['household', 'Household'], ['mine', 'Mine']].map(([val, label]) => (
-          <button
-            key={val}
-            onClick={() => setScope(val)}
-            className={`flex-1 py-1.5 text-xs font-medium rounded-lg transition-colors ${
-              scope === val ? 'bg-white shadow text-blue-600' : 'text-gray-500'
-            }`}
-          >
-            {label}
-          </button>
-        ))}
       </div>
 
       {/* Date picker */}
