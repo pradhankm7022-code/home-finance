@@ -6,8 +6,61 @@ import {
   PieChart, Pie, Cell
 } from 'recharts'
 
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 const INCOME_COLORS = ['#10b981', '#34d399', '#6ee7b7', '#059669', '#047857', '#a7f3d0', '#d1fae5']
 const EXPENSE_COLORS = ['#ef4444', '#f87171', '#fca5a5', '#dc2626', '#b91c1c', '#fecaca', '#fee2e2']
+
+function CategoryFilter({ categories, selected, onChange }) {
+  return (
+    <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
+      {['All', ...categories].map(cat => (
+        <button
+          key={cat}
+          onClick={() => onChange(cat)}
+          className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap transition-colors flex-shrink-0 ${
+            selected === cat ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+          }`}
+        >
+          {cat}
+        </button>
+      ))}
+    </div>
+  )
+}
+
+function MonthBarChart({ title, transactions, type, categoryFilter, fmt }) {
+  const filtered = categoryFilter === 'All'
+    ? transactions.filter(t => t.type === type)
+    : transactions.filter(t => t.type === type && t.category === categoryFilter)
+
+  const data = MONTHS.map((name, i) => ({
+    name,
+    amount: filtered
+      .filter(t => new Date(t.date).getMonth() === i)
+      .reduce((s, t) => s + Number(t.amount), 0)
+  }))
+
+  const fill = type === 'income' ? '#10b981' : '#ef4444'
+
+  return (
+    <div className="bg-white rounded-2xl border border-gray-100 p-4 mb-4">
+      <h3 className="text-sm font-semibold text-gray-700 mb-3">{title}</h3>
+      {filtered.length === 0 ? (
+        <p className="text-xs text-gray-400 text-center py-6">No data</p>
+      ) : (
+        <ResponsiveContainer width="100%" height={180}>
+          <BarChart data={data} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
+            <XAxis dataKey="name" tick={{ fontSize: 10 }} />
+            <YAxis tick={{ fontSize: 10 }} />
+            <Tooltip formatter={(v) => fmt(v)} />
+            <Bar dataKey="amount" fill={fill} radius={[4, 4, 0, 0]} name={type === 'income' ? 'Income' : 'Expense'} />
+          </BarChart>
+        </ResponsiveContainer>
+      )}
+    </div>
+  )
+}
 
 function PieChartCard({ title, data, colors, total, fmt }) {
   if (data.length === 0) return (
@@ -60,11 +113,19 @@ export default function Reports() {
   const [month, setMonth] = useState(() => new Date().toISOString().slice(0, 7))
   const [year, setYear] = useState(() => String(new Date().getFullYear()))
   const [transactions, setTransactions] = useState([])
+  const [expenseCatFilter, setExpenseCatFilter] = useState('All')
+  const [incomeCatFilter, setIncomeCatFilter] = useState('All')
 
   useEffect(() => {
     if (!profile?.household_id) return
     fetchTransactions()
   }, [profile?.household_id, mode, month, year])
+
+  // Reset filters when mode or year changes
+  useEffect(() => {
+    setExpenseCatFilter('All')
+    setIncomeCatFilter('All')
+  }, [mode, year])
 
   async function fetchTransactions() {
     let start, end
@@ -89,6 +150,9 @@ export default function Reports() {
   const income = transactions.filter(t => t.type === 'income').reduce((s, t) => s + Number(t.amount), 0)
   const expenses = transactions.filter(t => t.type === 'expense').reduce((s, t) => s + Number(t.amount), 0)
 
+  const incomeCategories = [...new Set(transactions.filter(t => t.type === 'income').map(t => t.category))].sort()
+  const expenseCategories = [...new Set(transactions.filter(t => t.type === 'expense').map(t => t.category))].sort()
+
   const byIncomeCategory = Object.entries(
     transactions.filter(t => t.type === 'income').reduce((acc, t) => {
       acc[t.category] = (acc[t.category] || 0) + Number(t.amount)
@@ -103,15 +167,6 @@ export default function Reports() {
     }, {})
   ).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value)
 
-  const barData = (() => {
-    const cats = {}
-    transactions.forEach(t => {
-      if (!cats[t.category]) cats[t.category] = { name: t.category, income: 0, expense: 0 }
-      cats[t.category][t.type] = (cats[t.category][t.type] || 0) + Number(t.amount)
-    })
-    return Object.values(cats).sort((a, b) => (b.income + b.expense) - (a.income + a.expense))
-  })()
-
   const currentYear = new Date().getFullYear()
   const yearOptions = Array.from({ length: 5 }, (_, i) => String(currentYear - i))
 
@@ -120,8 +175,6 @@ export default function Reports() {
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-xl font-bold text-gray-800">Reports</h2>
-
-        {/* Mode toggle */}
         <div className="flex rounded-xl bg-gray-100 p-1">
           {['monthly', 'yearly'].map(m => (
             <button
@@ -179,28 +232,54 @@ export default function Reports() {
         </div>
       </div>
 
-      {/* Bar chart — income + expense per category */}
-      <div className="bg-white rounded-2xl border border-gray-100 p-4 mb-4">
-        <h3 className="text-sm font-semibold text-gray-700 mb-3">
-          {mode === 'monthly' ? 'Monthly' : 'Yearly'} by Category
-        </h3>
-        {barData.length === 0 ? (
-          <p className="text-xs text-gray-400 text-center py-6">No data</p>
-        ) : (
-          <ResponsiveContainer width="100%" height={200}>
-            <BarChart data={barData} margin={{ top: 0, right: 0, left: -20, bottom: 40 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
-              <XAxis dataKey="name" tick={{ fontSize: 10 }} angle={-35} textAnchor="end" interval={0} />
-              <YAxis tick={{ fontSize: 11 }} />
-              <Tooltip formatter={(v) => fmt(v)} />
-              <Bar dataKey="income" fill="#10b981" radius={[4, 4, 0, 0]} name="Income" />
-              <Bar dataKey="expense" fill="#ef4444" radius={[4, 4, 0, 0]} name="Expense" />
-            </BarChart>
-          </ResponsiveContainer>
-        )}
-      </div>
+      {/* Yearly-only: month-by-month bar charts with category filter */}
+      {mode === 'yearly' && (
+        <>
+          {/* Yearly Expenses by Month */}
+          <div className="bg-white rounded-2xl border border-gray-100 p-4 mb-4">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-semibold text-gray-700">Yearly Expenses</h3>
+            </div>
+            <CategoryFilter
+              categories={expenseCategories}
+              selected={expenseCatFilter}
+              onChange={setExpenseCatFilter}
+            />
+            <div className="mt-3">
+              <MonthBarChart
+                title=""
+                transactions={transactions}
+                type="expense"
+                categoryFilter={expenseCatFilter}
+                fmt={fmt}
+              />
+            </div>
+          </div>
 
-      {/* Pie charts */}
+          {/* Yearly Income by Month */}
+          <div className="bg-white rounded-2xl border border-gray-100 p-4 mb-4">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-semibold text-gray-700">Yearly Income</h3>
+            </div>
+            <CategoryFilter
+              categories={incomeCategories}
+              selected={incomeCatFilter}
+              onChange={setIncomeCatFilter}
+            />
+            <div className="mt-3">
+              <MonthBarChart
+                title=""
+                transactions={transactions}
+                type="income"
+                categoryFilter={incomeCatFilter}
+                fmt={fmt}
+              />
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Pie charts — both modes */}
       <div className="space-y-4">
         <PieChartCard
           title="Income by Category"
