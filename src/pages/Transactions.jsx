@@ -346,7 +346,7 @@ export default function Transactions() {
                 <span className={`font-semibold text-sm ${t.type === 'income' ? 'text-green-600' : 'text-red-500'}`}>
                   {t.type === 'income' ? '+' : '-'}{fmt(t.amount)}
                 </span>
-                {t.user_id === user.id ? (
+                {t.user_id === user.id && (
                   <>
                     <button onClick={() => { setEditing(t); setShowForm(true) }} className="text-gray-400 hover:text-blue-500">
                       <Pencil size={14} />
@@ -355,8 +355,6 @@ export default function Transactions() {
                       <Trash2 size={14} />
                     </button>
                   </>
-                ) : (
-                  <span className="text-xs text-gray-300 italic">read only</span>
                 )}
               </div>
             </div>
