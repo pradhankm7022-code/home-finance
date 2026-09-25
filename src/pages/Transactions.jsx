@@ -137,12 +137,11 @@ function TransactionForm({ initial, onSave, onCancel, error, householdId }) {
           ))}
         </div>
 
-        <input
-          type="text"
-          placeholder="Description"
-          value={form.description}
-          onChange={e => set('description', e.target.value)}
-          className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+        <CategoryInput
+          value={form.category}
+          onChange={v => set('category', v)}
+          type={form.type}
+          householdId={householdId}
         />
 
         <input
@@ -155,17 +154,18 @@ function TransactionForm({ initial, onSave, onCancel, error, householdId }) {
           className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
 
-        <CategoryInput
-          value={form.category}
-          onChange={v => set('category', v)}
-          type={form.type}
-          householdId={householdId}
-        />
-
         <input
           type="date"
           value={form.date}
           onChange={e => set('date', e.target.value)}
+          className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
+
+        <input
+          type="text"
+          placeholder="Description"
+          value={form.description}
+          onChange={e => set('description', e.target.value)}
           className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
 
@@ -234,7 +234,7 @@ export default function Transactions() {
   async function fetchTransactions() {
     const { data, error } = await supabase
       .from('transactions')
-      .select('*')
+      .select('*, profiles(name)')
       .eq('household_id', profile.household_id)
       .order('date', { ascending: false })
     if (!error) setTransactions(data || [])
@@ -291,7 +291,8 @@ export default function Transactions() {
   const fmt = (n) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(n)
 
   const filtered = transactions.filter(t => {
-    if (filter !== 'all' && t.type !== filter) return false
+    if (filter !== 'all' && filter !== 'mine' && t.type !== filter) return false
+    if (filter === 'mine' && t.user_id !== user.id) return false
     if (search && !t.description.toLowerCase().includes(search.toLowerCase()) && !t.category.toLowerCase().includes(search.toLowerCase())) return false
     return true
   })
@@ -316,16 +317,16 @@ export default function Transactions() {
         className="w-full border border-gray-200 rounded-xl px-4 py-2 text-sm mb-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
       />
 
-      <div className="flex gap-2 mb-4">
-        {['all', 'income', 'expense'].map(f => (
+      <div className="flex gap-2 mb-4 overflow-x-auto pb-1">
+        {[['all', 'All'], ['mine', 'Mine'], ['income', 'Income'], ['expense', 'Expense']].map(([val, label]) => (
           <button
-            key={f}
-            onClick={() => setFilter(f)}
-            className={`px-3 py-1 rounded-full text-xs font-medium capitalize transition-colors ${
-              filter === f ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600'
+            key={val}
+            onClick={() => setFilter(val)}
+            className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap transition-colors flex-shrink-0 ${
+              filter === val ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600'
             }`}
           >
-            {f}
+            {label}
           </button>
         ))}
       </div>
@@ -340,7 +341,7 @@ export default function Transactions() {
             <div key={t.id} className="bg-white rounded-xl px-4 py-3 flex items-center justify-between border border-gray-100">
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-gray-800 truncate">{t.description || t.category}</p>
-                <p className="text-xs text-gray-400">{t.category} · {new Date(t.date).toLocaleDateString()}</p>
+                <p className="text-xs text-gray-400">{t.category} · {new Date(t.date).toLocaleDateString()} · {t.profiles?.name}</p>
               </div>
               <div className="flex items-center gap-2 ml-2">
                 <span className={`font-semibold text-sm ${t.type === 'income' ? 'text-green-600' : 'text-red-500'}`}>
