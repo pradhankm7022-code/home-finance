@@ -10,9 +10,9 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       manifest: {
-        name: 'HomeFinance',
-        short_name: 'HomeFinance',
-        description: 'Household finance tracker',
+        name: 'ManeLekka',
+        short_name: 'ManeLekka',
+        description: 'Your home. Your money. Your account.',
         theme_color: '#2563eb',
         background_color: '#f9fafb',
         display: 'standalone',

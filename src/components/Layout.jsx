@@ -32,7 +32,7 @@ export default function Layout({ children }) {
     <div className="min-h-screen flex flex-col">
       {/* Top bar */}
       <header className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between sticky top-0 z-10">
-        <h1 className="text-lg font-bold text-blue-600">HomeFinance</h1>
+        <h1 className="text-lg font-bold text-blue-600">ManeLekka</h1>
         <button onClick={handleSignOut} className="text-gray-500 hover:text-red-500 transition-colors">
           <LogOut size={20} />
         </button>

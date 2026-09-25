@@ -27,7 +27,7 @@ export default function Login() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
       <div className="w-full max-w-sm bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-        <h1 className="text-2xl font-bold text-blue-600 mb-1">HomeFinance</h1>
+        <h1 className="text-2xl font-bold text-blue-600 mb-1">ManeLekka</h1>
         <p className="text-gray-500 text-sm mb-6">Sign in to your account</p>
 
         {error && (
