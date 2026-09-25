@@ -136,7 +136,7 @@ export default function Settings() {
               Install ManeLekka
             </button>
           ) : (
-            <p className="text-xs text-gray-400 text-center py-1">Open in Chrome and use the browser menu to install this app on your device.</p>
+            <p className="text-xs text-gray-400 text-center py-1">Tap the browser menu (⋮) and select <strong>Install app</strong> to install ManeLekka on your device.</p>
           )}
         </div>
       )}
