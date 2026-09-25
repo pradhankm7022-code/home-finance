@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { Home, ArrowLeftRight, BarChart2, Settings, LogOut } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
+import TourTooltip from './TourTooltip'
 
 const navItems = [
   { to: '/', icon: Home, label: 'Dashboard' },
@@ -10,9 +11,18 @@ const navItems = [
   { to: '/settings', icon: Settings, label: 'Settings' },
 ]
 
+const MAIN_STEPS = [
+  { target: 'stat-tiles',        title: 'Monthly Overview',      text: 'Your income, expenses and balance for this month, updated in real time.' },
+  { target: 'fab',               title: 'Add a Transaction',     text: 'Tap the + button to quickly log any income or expense.' },
+  { target: 'nav-transactions',  title: 'Transactions',          text: 'View, filter and manage all your household transactions here.' },
+  { target: 'nav-reports',       title: 'Reports',               text: 'Visualise spending by category — monthly or yearly charts.' },
+  { target: 'nav-settings',      title: 'Settings',              text: 'Manage your household, invite family members and install the app.' },
+  { target: 'invite-code',       title: 'Invite Code',           text: 'Share this code with family so they can join your household.' },
+]
+
 export default function Layout({ children }) {
   const { pathname } = useLocation()
-  const { signOut } = useAuth()
+  const { signOut, profile } = useAuth()
   const navigate = useNavigate()
 
   // Ensure Dashboard is always behind non-dashboard tabs in history
@@ -26,6 +36,12 @@ export default function Layout({ children }) {
   async function handleSignOut() {
     await signOut()
     navigate('/login', { replace: true })
+  }
+
+  function handleTourStep(stepIndex, step) {
+    if (step.target === 'invite-code') {
+      navigate('/settings', { replace: true })
+    }
   }
 
   return (
@@ -52,6 +68,7 @@ export default function Layout({ children }) {
               key={to}
               to={to}
               replace
+              data-tour={`nav-${label.toLowerCase()}`}
               className={`flex flex-col items-center py-2 px-3 text-xs transition-colors ${
                 active ? 'text-blue-600' : 'text-gray-500 hover:text-gray-700'
               }`}
@@ -62,6 +79,14 @@ export default function Layout({ children }) {
           )
         })}
       </nav>
+
+      {profile?.household_id && (
+        <TourTooltip
+          steps={MAIN_STEPS}
+          storageKey="tour_main_done"
+          onStep={handleTourStep}
+        />
+      )}
     </div>
   )
 }

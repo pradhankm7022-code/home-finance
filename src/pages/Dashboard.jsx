@@ -65,7 +65,7 @@ export default function Dashboard() {
       <div className="flex items-center justify-between mb-2">
         <p className="text-xs text-gray-400">This month</p>
       </div>
-      <div className="grid grid-cols-3 gap-3 mb-6">
+      <div data-tour="stat-tiles" className="grid grid-cols-3 gap-3 mb-6">
         <div className="bg-blue-600 text-white rounded-2xl p-3">
           <Wallet size={16} className="mb-1 opacity-80" />
           <p className="text-xs opacity-80">Balance</p>
@@ -111,6 +111,7 @@ export default function Dashboard() {
 
       {/* FAB */}
       <button
+        data-tour="fab"
         onClick={() => navigate('/transactions', { state: { openForm: true }, replace: true })}
         className="fixed bottom-20 right-4 bg-blue-600 text-white w-12 h-12 rounded-full flex items-center justify-center shadow-lg hover:bg-blue-700 transition-colors"
       >

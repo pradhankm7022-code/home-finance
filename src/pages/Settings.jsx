@@ -82,7 +82,7 @@ export default function Settings() {
         <h3 className="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-3">Household</h3>
         <p className="text-sm text-gray-700 mb-1">{profile?.households?.name}</p>
         <p className="text-xs text-gray-500 mb-3">Share this invite code with family members so they can join</p>
-        <div className="flex items-center gap-2 bg-gray-50 rounded-xl px-4 py-3 mb-4">
+        <div data-tour="invite-code" className="flex items-center gap-2 bg-gray-50 rounded-xl px-4 py-3 mb-4">
           <span className="flex-1 font-mono font-bold tracking-widest text-blue-600 text-lg">
             {profile?.households?.invite_code || '------'}
           </span>

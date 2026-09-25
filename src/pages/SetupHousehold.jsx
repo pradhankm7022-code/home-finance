@@ -3,6 +3,13 @@ import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { Home, ArrowRight } from 'lucide-react'
+import TourTooltip from '../components/TourTooltip'
+
+const SETUP_STEPS = [
+  { target: 'setup-tabs',   title: 'Create or Join',      text: 'Create a new household for your family, or join one with an invite code.' },
+  { target: 'setup-name',   title: 'Name your household', text: 'Give your household a memorable name, like "The Smith Family".' },
+  { target: 'setup-invite', title: 'Have a code?',        text: 'Got an invite code from a family member? Switch to Join and enter it here.' },
+]
 
 export default function SetupHousehold() {
   const { user, fetchProfile } = useAuth()
@@ -155,7 +162,7 @@ export default function SetupHousehold() {
           </h2>
           <p className="text-gray-500 text-sm mb-5">Create a new household or join one with an invite code</p>
 
-          <div className="flex rounded-xl bg-gray-100 p-1 mb-5">
+          <div data-tour="setup-tabs" className="flex rounded-xl bg-gray-100 p-1 mb-5">
             {['create', 'join'].map(t => (
               <button
                 key={t}
@@ -178,8 +185,8 @@ export default function SetupHousehold() {
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Household Name</label>
                 <input
+                  data-tour="setup-name"
                   type="text"
-                  value={householdName}
                   onChange={e => setHouseholdName(e.target.value)}
                   required
                   className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -199,6 +206,7 @@ export default function SetupHousehold() {
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Invite Code</label>
                 <input
+                  data-tour="setup-invite"
                   type="text"
                   value={inviteCode}
                   onChange={e => setInviteCode(e.target.value)}
@@ -220,6 +228,11 @@ export default function SetupHousehold() {
         </div>
 
       </div>
+      <TourTooltip
+        steps={SETUP_STEPS}
+        storageKey="tour_setup_done"
+        onStep={(i, step) => { if (step.target === 'setup-invite') setTab('join') }}
+      />
     </div>
   )
 }
