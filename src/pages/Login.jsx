@@ -9,6 +9,7 @@ export default function Login() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [showForgot, setShowForgot] = useState(false)
 
   async function handleSubmit(e) {
     e.preventDefault()
@@ -19,6 +20,7 @@ export default function Login() {
       navigate('/', { replace: true })
     } catch (err) {
       setError(err.message)
+      setShowForgot(true)
     } finally {
       setLoading(false)
     }
@@ -32,7 +34,14 @@ export default function Login() {
         <p className="text-gray-400 text-xs mb-6 leading-relaxed">Track your family's income and expenses in one place. Add transactions, invite family members, and see where your money goes.</p>
 
         {error && (
-          <div className="bg-red-50 text-red-600 text-sm px-3 py-2 rounded-lg mb-4">{error}</div>
+          <div className="bg-red-50 text-red-600 text-sm px-3 py-2 rounded-lg mb-4">
+            {error}
+            {showForgot && (
+              <Link to="/forgot-password" state={{ email }} className="block mt-1 text-blue-600 font-medium hover:underline">
+                Forgot your password?
+              </Link>
+            )}
+          </div>
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
