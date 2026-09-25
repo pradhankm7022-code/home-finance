@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell
 } from 'recharts'
 
@@ -49,13 +49,13 @@ function MonthBarChart({ title, transactions, type, categoryFilter, fmt }) {
         <p className="text-xs text-gray-400 text-center py-6">No data</p>
       ) : (
         <ResponsiveContainer width="100%" height={180}>
-          <BarChart data={data} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
+          <LineChart data={data} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
             <XAxis dataKey="name" tick={{ fontSize: 10 }} />
             <YAxis tick={{ fontSize: 10 }} />
             <Tooltip formatter={(v) => fmt(v)} />
-            <Bar dataKey="amount" fill={fill} radius={[4, 4, 0, 0]} name={type === 'income' ? 'Income' : 'Expense'} />
-          </BarChart>
+            <Line type="monotone" dataKey="amount" stroke={fill} strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} name={type === 'income' ? 'Income' : 'Expense'} />
+          </LineChart>
         </ResponsiveContainer>
       )}
     </div>
