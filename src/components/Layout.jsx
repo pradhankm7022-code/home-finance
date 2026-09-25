@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { Home, ArrowLeftRight, BarChart2, Settings, LogOut } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
@@ -14,9 +15,17 @@ export default function Layout({ children }) {
   const { signOut } = useAuth()
   const navigate = useNavigate()
 
+  // Ensure Dashboard is always behind non-dashboard tabs in history
+  useEffect(() => {
+    if (pathname !== '/') {
+      window.history.pushState({ dashboard: true }, '', '/')
+      window.history.pushState({ tab: pathname }, '', pathname)
+    }
+  }, [pathname])
+
   async function handleSignOut() {
     await signOut()
-    navigate('/login')
+    navigate('/login', { replace: true })
   }
 
   return (
