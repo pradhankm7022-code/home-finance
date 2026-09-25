@@ -1,6 +1,6 @@
 import { useAuth } from '../context/AuthContext'
-import { Copy, Check, LogOut as LeaveIcon } from 'lucide-react'
-import { useState } from 'react'
+import { Copy, Check, LogOut as LeaveIcon, Download } from 'lucide-react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 
@@ -10,6 +10,34 @@ export default function Settings() {
   const [copied, setCopied] = useState(false)
   const [leaving, setLeaving] = useState(false)
   const [confirmLeave, setConfirmLeave] = useState(false)
+  const [installPrompt, setInstallPrompt] = useState(null)
+  const [isInstalled, setIsInstalled] = useState(false)
+
+  useEffect(() => {
+    function handleBeforeInstall(e) {
+      e.preventDefault()
+      setInstallPrompt(e)
+    }
+    function handleAppInstalled() {
+      setIsInstalled(true)
+      setInstallPrompt(null)
+    }
+    window.addEventListener('beforeinstallprompt', handleBeforeInstall)
+    window.addEventListener('appinstalled', handleAppInstalled)
+    if (window.matchMedia('(display-mode: standalone)').matches) setIsInstalled(true)
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstall)
+      window.removeEventListener('appinstalled', handleAppInstalled)
+    }
+  }, [])
+
+  async function handleInstall() {
+    if (!installPrompt) return
+    installPrompt.prompt()
+    const { outcome } = await installPrompt.userChoice
+    if (outcome === 'accepted') setIsInstalled(true)
+    setInstallPrompt(null)
+  }
 
   function copyCode() {
     navigator.clipboard.writeText(profile?.households?.invite_code || '')
@@ -94,6 +122,24 @@ export default function Settings() {
           </div>
         )}
       </div>
+
+      {/* Install app */}
+      {!isInstalled && (
+        <div className="bg-white rounded-2xl border border-gray-100 p-4 mb-4">
+          <h3 className="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-3">App</h3>
+          {installPrompt ? (
+            <button
+              onClick={handleInstall}
+              className="w-full flex items-center justify-center gap-2 text-blue-600 bg-blue-50 py-2.5 rounded-xl text-sm font-medium hover:bg-blue-100 transition-colors"
+            >
+              <Download size={16} />
+              Install ManeLekka
+            </button>
+          ) : (
+            <p className="text-xs text-gray-400 text-center py-1">Open in Chrome and use the browser menu to install this app on your device.</p>
+          )}
+        </div>
+      )}
 
       {/* Sign out */}
       <button
