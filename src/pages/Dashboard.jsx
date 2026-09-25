@@ -71,16 +71,22 @@ export default function Dashboard() {
           <p className="text-xs opacity-80">Balance</p>
           <p className="font-bold text-base">{fmt(balance)}</p>
         </div>
-        <div className="bg-white border border-gray-100 rounded-2xl p-3 shadow-sm">
+        <button
+          onClick={() => navigate('/transactions', { state: { filter: 'income' }, replace: true })}
+          className="bg-white border border-gray-100 rounded-2xl p-3 shadow-sm text-left"
+        >
           <TrendingUp size={16} className="mb-1 text-green-500" />
           <p className="text-xs text-gray-500">Income</p>
           <p className="font-bold text-green-600 text-base">{fmt(income)}</p>
-        </div>
-        <div className="bg-white border border-gray-100 rounded-2xl p-3 shadow-sm">
+        </button>
+        <button
+          onClick={() => navigate('/transactions', { state: { filter: 'expense' }, replace: true })}
+          className="bg-white border border-gray-100 rounded-2xl p-3 shadow-sm text-left"
+        >
           <TrendingDown size={16} className="mb-1 text-red-500" />
           <p className="text-xs text-gray-500">Expenses</p>
           <p className="font-bold text-red-500 text-base">{fmt(expenses)}</p>
-        </div>
+        </button>
       </div>
 
       {/* Recent transactions */}

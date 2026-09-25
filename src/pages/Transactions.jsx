@@ -203,6 +203,7 @@ export default function Transactions() {
 
   useEffect(() => {
     if (location.state?.openForm) setShowForm(true)
+    if (location.state?.filter) setFilter(location.state.filter)
   }, [location.state])
 
   // Push a fake history entry when form opens so back button closes it
