@@ -1,5 +1,5 @@
 import { useAuth } from '../context/AuthContext'
-import { Copy, Check, LogOut as LeaveIcon, Download } from 'lucide-react'
+import { Copy, Check, LogOut as LeaveIcon, Download, Share2 } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
@@ -138,6 +138,20 @@ export default function Settings() {
           ) : (
             <p className="text-xs text-gray-400 text-center py-1">Open in Chrome and use the browser menu to install this app on your device.</p>
           )}
+        </div>
+      )}
+
+      {/* Share app */}
+      {navigator.share && (
+        <div className="bg-white rounded-2xl border border-gray-100 p-4 mb-4">
+          <h3 className="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-3">Share</h3>
+          <button
+            onClick={() => navigator.share({ title: 'ManeLekka', text: 'Your home. Your money. Your account.', url: window.location.origin })}
+            className="w-full flex items-center justify-center gap-2 text-green-600 bg-green-50 py-2.5 rounded-xl text-sm font-medium hover:bg-green-100 transition-colors"
+          >
+            <Share2 size={16} />
+            Share App
+          </button>
         </div>
       )}
 
