@@ -2,10 +2,11 @@ import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { TrendingUp, TrendingDown, Wallet, Plus } from 'lucide-react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 
 export default function Dashboard() {
   const { profile } = useAuth()
+  const navigate = useNavigate()
   const [transactions, setTransactions] = useState([])
   const [loading, setLoading] = useState(true)
 
@@ -43,7 +44,7 @@ export default function Dashboard() {
   const expenses = transactions.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0)
   const balance = income - expenses
 
-  const fmt = (n) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(n)
+  const fmt = (n) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(n)
 
   if (!profile?.household_id) return (
     <div className="p-6 text-center text-gray-500">
@@ -106,12 +107,12 @@ export default function Dashboard() {
       )}
 
       {/* FAB */}
-      <Link
-        to="/transactions/new"
+      <button
+        onClick={() => navigate('/transactions', { state: { openForm: true } })}
         className="fixed bottom-20 right-4 bg-blue-600 text-white w-12 h-12 rounded-full flex items-center justify-center shadow-lg hover:bg-blue-700 transition-colors"
       >
         <Plus size={22} />
-      </Link>
+      </button>
     </div>
   )
 }

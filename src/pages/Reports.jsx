@@ -79,7 +79,7 @@ export default function Reports() {
 
   const income = transactions.filter(t => t.type === 'income').reduce((s, t) => s + Number(t.amount), 0)
   const expenses = transactions.filter(t => t.type === 'expense').reduce((s, t) => s + Number(t.amount), 0)
-  const fmt = (n) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(n)
+  const fmt = (n) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(n)
 
   const byIncomeCategory = Object.entries(
     transactions.filter(t => t.type === 'income').reduce((acc, t) => {
@@ -109,7 +109,7 @@ export default function Reports() {
           type="month"
           value={month}
           onChange={e => setMonth(e.target.value)}
-          className="border border-gray-200 rounded-xl px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="border border-gray-200 rounded-xl px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 w-40"
         />
       </div>
 

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { Plus, Pencil, Trash2, X } from 'lucide-react'
+import { useLocation } from 'react-router-dom'
 
 function CategoryInput({ value, onChange, type, householdId }) {
   const [input, setInput] = useState(value || '')
@@ -182,6 +183,7 @@ function TransactionForm({ initial, onSave, onCancel, error, householdId }) {
 
 export default function Transactions() {
   const { profile, user } = useAuth()
+  const location = useLocation()
   const [transactions, setTransactions] = useState([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
@@ -189,6 +191,10 @@ export default function Transactions() {
   const [filter, setFilter] = useState('all')
   const [search, setSearch] = useState('')
   const [saveError, setSaveError] = useState('')
+
+  useEffect(() => {
+    if (location.state?.openForm) setShowForm(true)
+  }, [location.state])
 
   useEffect(() => {
     if (!profile?.household_id) return
@@ -262,7 +268,7 @@ export default function Transactions() {
     if (!error) setTransactions(prev => prev.filter(t => t.id !== id))
   }
 
-  const fmt = (n) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(n)
+  const fmt = (n) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(n)
 
   const filtered = transactions.filter(t => {
     if (filter !== 'all' && t.type !== filter) return false
