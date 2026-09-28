@@ -22,18 +22,18 @@ function CategoryInput({ value, onChange, type, householdId }) {
   async function loadCategories() {
     const { data } = await supabase
       .from('categories')
-      .select('name')
+      .select('id, name')
       .eq('household_id', householdId)
       .or(`type.eq.${type},type.eq.both`)
       .order('name')
-    setAllCategories(data?.map(c => c.name) || [])
+    setAllCategories(data || [])
   }
 
   function handleInput(val) {
     setInput(val)
-    onChange(val)
+    onChange({ id: null, name: val })
     if (val.trim()) {
-      setSuggestions(allCategories.filter(c => c.toLowerCase().includes(val.toLowerCase())))
+      setSuggestions(allCategories.filter(c => c.name.toLowerCase().includes(val.toLowerCase())))
     } else {
       setSuggestions(allCategories)
     }
@@ -41,13 +41,13 @@ function CategoryInput({ value, onChange, type, householdId }) {
   }
 
   function handleFocus() {
-    setSuggestions(input.trim() ? allCategories.filter(c => c.toLowerCase().includes(input.toLowerCase())) : allCategories)
+    setSuggestions(input.trim() ? allCategories.filter(c => c.name.toLowerCase().includes(input.toLowerCase())) : allCategories)
     setShowSuggestions(true)
   }
 
-  function selectSuggestion(name) {
-    setInput(name)
-    onChange(name)
+  function selectSuggestion(cat) {
+    setInput(cat.name)
+    onChange(cat)
     setShowSuggestions(false)
   }
 
@@ -60,13 +60,13 @@ function CategoryInput({ value, onChange, type, householdId }) {
     return () => document.removeEventListener('mousedown', handleClick)
   }, [])
 
-  const showCreate = input.trim() && !allCategories.some(c => c.toLowerCase() === input.trim().toLowerCase())
+  const showCreate = input.trim() && !allCategories.some(c => c.name.toLowerCase() === input.trim().toLowerCase())
 
   return (
     <div className="relative" ref={ref}>
       <input
         type="text"
-        placeholder="Category (e.g. Groceries)"
+        placeholder={type === 'income' ? 'Category (e.g. Salary)' : 'Category (e.g. Groceries)'}
         value={input}
         onChange={e => handleInput(e.target.value)}
         onFocus={handleFocus}
@@ -74,20 +74,20 @@ function CategoryInput({ value, onChange, type, householdId }) {
       />
       {showSuggestions && (suggestions.length > 0 || showCreate) && (
         <div className="absolute z-10 left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg max-h-48 overflow-y-auto">
-          {suggestions.map(name => (
+          {suggestions.map(cat => (
             <button
-              key={name}
+              key={cat.id}
               type="button"
-              onMouseDown={() => selectSuggestion(name)}
+              onMouseDown={() => selectSuggestion(cat)}
               className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 first:rounded-t-xl"
             >
-              {name}
+              {cat.name}
             </button>
           ))}
           {showCreate && (
             <button
               type="button"
-              onMouseDown={() => selectSuggestion(input.trim())}
+              onMouseDown={() => selectSuggestion({ id: null, name: input.trim() })}
               className="w-full text-left px-4 py-2.5 text-sm text-blue-600 font-medium hover:bg-blue-50 border-t border-gray-100 last:rounded-b-xl flex items-center gap-2"
             >
               <Plus size={14} />
@@ -102,7 +102,7 @@ function CategoryInput({ value, onChange, type, householdId }) {
 
 function TransactionForm({ initial, onSave, onCancel, error, householdId }) {
   const [form, setForm] = useState(initial || {
-    description: '', amount: '', category: '', type: 'expense', date: new Date().toISOString().slice(0, 10)
+    description: '', amount: '', category_id: '', category_name: '', type: 'expense', date: new Date().toISOString().slice(0, 10)
   })
   const [saving, setSaving] = useState(false)
 
@@ -133,7 +133,7 @@ function TransactionForm({ initial, onSave, onCancel, error, householdId }) {
             <button
               key={t}
               type="button"
-              onClick={() => { set('type', t); set('category', '') }}
+              onClick={() => { set('type', t); set('category_id', ''); set('category_name', '') }}
               className={`flex-1 py-1.5 text-sm font-medium rounded-lg capitalize transition-colors ${
                 form.type === t
                   ? t === 'expense' ? 'bg-white shadow text-red-500' : 'bg-white shadow text-green-600'
@@ -146,8 +146,8 @@ function TransactionForm({ initial, onSave, onCancel, error, householdId }) {
         </div>
 
         <CategoryInput
-          value={form.category}
-          onChange={v => set('category', v)}
+          value={form.category_name}
+          onChange={cat => { set('category_id', cat.id); set('category_name', cat.name) }}
           type={form.type}
           householdId={householdId}
         />
@@ -244,7 +244,7 @@ export default function Transactions() {
   async function fetchTransactions() {
     const { data, error } = await supabase
       .from('transactions')
-      .select('*')
+      .select('*, categories(id, name)')
       .eq('household_id', profile.household_id)
       .order('date', { ascending: false })
     if (error) { setLoading(false); return }
@@ -270,22 +270,26 @@ export default function Transactions() {
       .eq('household_id', householdId)
       .eq('name', name)
       .single()
-    if (!data) {
-      await supabase.from('categories').insert({ name, type, household_id: householdId })
-    }
+    if (data) return data.id
+    const { data: inserted } = await supabase
+      .from('categories')
+      .insert({ name, type, household_id: householdId })
+      .select('id')
+      .single()
+    return inserted.id
   }
 
   async function saveTransaction(form) {
     setSaveError('')
-    if (!form.category.trim()) { setSaveError('Please enter a category'); return }
+    if (!form.category_name?.trim()) { setSaveError('Please enter a category'); return }
     if (!form.amount || isNaN(parseFloat(form.amount))) { setSaveError('Please enter a valid amount'); return }
 
-    await ensureCategory(form.category.trim(), form.type, profile.household_id)
+    const categoryId = form.category_id || await ensureCategory(form.category_name.trim(), form.type, profile.household_id)
 
     const payload = {
       description: form.description,
       amount: parseFloat(form.amount),
-      category: form.category.trim(),
+      category_id: categoryId,
       type: form.type,
       date: form.date,
       household_id: profile.household_id,
@@ -294,12 +298,11 @@ export default function Transactions() {
     if (editing) {
       const { error } = await supabase.from('transactions').update(payload).eq('id', editing.id)
       if (error) { setSaveError(error.message); return }
-      setTransactions(prev => prev.map(t => t.id === editing.id ? { ...t, ...payload } : t))
     } else {
-      const { data, error } = await supabase.from('transactions').insert(payload).select().single()
+      const { error } = await supabase.from('transactions').insert(payload)
       if (error) { setSaveError(error.message); return }
-      setTransactions(prev => [data, ...prev])
     }
+    await fetchTransactions()
     setShowForm(false)
     setEditing(null)
   }
@@ -315,7 +318,8 @@ export default function Transactions() {
   const filtered = transactions.filter(t => {
     if (filter !== 'all' && filter !== 'mine' && t.type !== filter) return false
     if (filter === 'mine' && t.user_id !== user.id) return false
-    if (search && !t.description.toLowerCase().includes(search.toLowerCase()) && !t.category.toLowerCase().includes(search.toLowerCase())) return false
+    const catName = t.categories?.name || ''
+    if (search && !t.description.toLowerCase().includes(search.toLowerCase()) && !catName.toLowerCase().includes(search.toLowerCase())) return false
     return true
   })
 
@@ -362,8 +366,8 @@ export default function Transactions() {
           {filtered.map(t => (
             <div key={t.id} className="bg-white rounded-xl px-4 py-3 flex items-center justify-between border border-gray-100">
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-gray-800 truncate">{t.description || t.category}</p>
-                <p className="text-xs text-gray-400">{t.category} · {new Date(t.date).toLocaleDateString()} · {t.profiles?.name}</p>
+                <p className="text-sm font-medium text-gray-800 truncate">{t.description || t.categories?.name}</p>
+                <p className="text-xs text-gray-400">{t.categories?.name} · {new Date(t.date).toLocaleDateString()} · {t.profiles?.name}</p>
               </div>
               <div className="flex items-center gap-2 ml-2">
                 <span className={`font-semibold text-sm ${t.type === 'income' ? 'text-green-600' : 'text-red-500'}`}>
@@ -387,7 +391,7 @@ export default function Transactions() {
 
       {showForm && (
         <TransactionForm
-          initial={editing ? { ...editing, date: editing.date?.slice(0, 10) } : null}
+          initial={editing ? { ...editing, category_name: editing.categories?.name || '', date: editing.date?.slice(0, 10) } : null}
           onSave={saveTransaction}
           onCancel={() => { setShowForm(false); setEditing(null); setSaveError('') }}
           error={saveError}

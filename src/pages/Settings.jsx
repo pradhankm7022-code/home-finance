@@ -1,5 +1,5 @@
 import { useAuth } from '../context/AuthContext'
-import { Copy, Check, LogOut as LeaveIcon, Download, Share2, Trash2 } from 'lucide-react'
+import { Copy, Check, LogOut as LeaveIcon, Download, Share2, Trash2, Pencil } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
@@ -15,8 +15,49 @@ export default function Settings() {
   const [deleteError, setDeleteError] = useState('')
   const [installPrompt, setInstallPrompt] = useState(null)
   const [isInstalled, setIsInstalled] = useState(false)
+  const [categories, setCategories] = useState([])
+  const [editingCat, setEditingCat] = useState(null)
+  const [editingName, setEditingName] = useState('')
+  const [catError, setCatError] = useState('')
 
   const isCreator = profile?.households?.created_by === user?.id
+
+  useEffect(() => {
+    if (profile?.household_id) fetchCategories()
+  }, [profile?.household_id])
+
+  async function fetchCategories() {
+    const { data } = await supabase
+      .from('categories')
+      .select('id, name, type')
+      .eq('household_id', profile.household_id)
+      .order('name')
+    setCategories(data || [])
+  }
+
+  async function renameCategory(id) {
+    setCatError('')
+    const newName = editingName.trim()
+    if (!newName) return
+    const { error } = await supabase.from('categories').update({ name: newName }).eq('id', id)
+    if (error) { setCatError(error.message); return }
+    setEditingCat(null)
+    fetchCategories()
+  }
+
+  async function deleteCategory(id) {
+    setCatError('')
+    const { count } = await supabase
+      .from('transactions')
+      .select('id', { count: 'exact', head: true })
+      .eq('category_id', id)
+    if (count > 0) {
+      setCatError(`Cannot delete — used in ${count} transaction${count > 1 ? 's' : ''}. Delete those transactions first.`)
+      return
+    }
+    await supabase.from('categories').delete().eq('id', id)
+    fetchCategories()
+  }
 
   useEffect(() => {
     function handleBeforeInstall(e) {
@@ -191,6 +232,49 @@ export default function Settings() {
                 </div>
               </div>
             )}
+          </div>
+        )}
+      </div>
+
+      {/* Manage Categories */}
+      <div className="bg-white rounded-2xl border border-gray-100 p-4 mb-4">
+        <h3 className="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-3">Categories</h3>
+        {catError && <p className="text-xs text-red-500 mb-3">{catError}</p>}
+        {categories.length === 0 ? (
+          <p className="text-xs text-gray-400 text-center py-2">No categories yet</p>
+        ) : (
+          <div className="space-y-2">
+            {categories.map(cat => (
+              <div key={cat.id} className="flex items-center gap-2">
+                {editingCat === cat.id ? (
+                  <>
+                    <input
+                      autoFocus
+                      value={editingName}
+                      onChange={e => setEditingName(e.target.value)}
+                      onKeyDown={e => { if (e.key === 'Enter') renameCategory(cat.id); if (e.key === 'Escape') setEditingCat(null) }}
+                      className="flex-1 border border-blue-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                    <button onClick={() => renameCategory(cat.id)} className="text-xs text-blue-600 font-medium px-2 py-1.5 hover:underline">Save</button>
+                    <button onClick={() => setEditingCat(null)} className="text-xs text-gray-400 px-1 py-1.5 hover:underline">Cancel</button>
+                  </>
+                ) : (
+                  <>
+                    <span className="flex-1 text-sm text-gray-700">{cat.name}</span>
+                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                      cat.type === 'income' ? 'bg-green-50 text-green-600' :
+                      cat.type === 'expense' ? 'bg-red-50 text-red-500' : 'bg-gray-100 text-gray-500'
+                    }`}>{cat.type}</span>
+                    <button onClick={() => { setEditingCat(cat.id); setEditingName(cat.name); setCatError('') }} className="text-gray-400 hover:text-blue-500">
+                      <Pencil size={14} />
+                    </button>
+                    <button onClick={() => deleteCategory(cat.id)} className="text-gray-400 hover:text-red-500">
+                      <Trash2 size={14} />
+                    </button>
+                  </>
+                )}
+              </div>
+            ))}
           </div>
         )}
       </div>

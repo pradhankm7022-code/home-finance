@@ -26,15 +26,14 @@ export default function Dashboard() {
   }, [profile?.household_id])
 
   async function fetchTransactions() {
-    const startOfMonth = new Date()
-    startOfMonth.setDate(1)
-    startOfMonth.setHours(0, 0, 0, 0)
+    const now = new Date()
+    const startOfMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`
 
     const { data, error } = await supabase
       .from('transactions')
-      .select('*')
+      .select('*, categories(name)')
       .eq('household_id', profile.household_id)
-      .gte('date', startOfMonth.toISOString().slice(0, 10))
+      .gte('date', startOfMonth)
       .order('date', { ascending: false })
     if (!error) setTransactions(data || [])
     setLoading(false)
@@ -105,7 +104,7 @@ export default function Dashboard() {
             <div key={t.id} className="bg-white rounded-xl px-4 py-3 flex items-center justify-between border border-gray-100">
               <div>
                 <p className="text-sm font-medium text-gray-800">{t.description}</p>
-                <p className="text-xs text-gray-400">{t.category} · {new Date(t.date).toLocaleDateString()}</p>
+                <p className="text-xs text-gray-400">{t.categories?.name} · {new Date(t.date).toLocaleDateString()}</p>
               </div>
               <span className={`font-semibold text-sm ${t.type === 'income' ? 'text-green-600' : 'text-red-500'}`}>
                 {t.type === 'income' ? '+' : '-'}{fmt(t.amount)}

@@ -31,7 +31,7 @@ function CategoryFilter({ categories, selected, onChange }) {
 function MonthBarChart({ title, transactions, type, categoryFilter, fmt }) {
   const filtered = categoryFilter === 'All'
     ? transactions.filter(t => t.type === type)
-    : transactions.filter(t => t.type === type && t.category === categoryFilter)
+    : transactions.filter(t => t.type === type && t.categories?.name === categoryFilter)
 
   const data = MONTHS.map((name, i) => ({
     name,
@@ -139,7 +139,7 @@ export default function Reports() {
     }
     const { data } = await supabase
       .from('transactions')
-      .select('*')
+      .select('*, categories(name)')
       .eq('household_id', profile.household_id)
       .gte('date', start)
       .lt('date', end)
@@ -155,19 +155,21 @@ export default function Reports() {
   const income = visibleTransactions.filter(t => t.type === 'income').reduce((s, t) => s + Number(t.amount), 0)
   const expenses = visibleTransactions.filter(t => t.type === 'expense').reduce((s, t) => s + Number(t.amount), 0)
 
-  const incomeCategories = [...new Set(visibleTransactions.filter(t => t.type === 'income').map(t => t.category))].sort()
-  const expenseCategories = [...new Set(visibleTransactions.filter(t => t.type === 'expense').map(t => t.category))].sort()
+  const incomeCategories = [...new Set(visibleTransactions.filter(t => t.type === 'income').map(t => t.categories?.name).filter(Boolean))].sort()
+  const expenseCategories = [...new Set(visibleTransactions.filter(t => t.type === 'expense').map(t => t.categories?.name).filter(Boolean))].sort()
 
   const byIncomeCategory = Object.entries(
     visibleTransactions.filter(t => t.type === 'income').reduce((acc, t) => {
-      acc[t.category] = (acc[t.category] || 0) + Number(t.amount)
+      const name = t.categories?.name || 'Unknown'
+      acc[name] = (acc[name] || 0) + Number(t.amount)
       return acc
     }, {})
   ).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value)
 
   const byExpenseCategory = Object.entries(
     visibleTransactions.filter(t => t.type === 'expense').reduce((acc, t) => {
-      acc[t.category] = (acc[t.category] || 0) + Number(t.amount)
+      const name = t.categories?.name || 'Unknown'
+      acc[name] = (acc[name] || 0) + Number(t.amount)
       return acc
     }, {})
   ).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value)
