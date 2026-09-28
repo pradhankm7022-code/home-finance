@@ -1,13 +1,12 @@
 import { useEffect } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { Home, ArrowLeftRight, BarChart2, Settings, LogOut, Split } from 'lucide-react'
+import { Home, ArrowLeftRight, BarChart2, Settings, LogOut } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import TourTooltip from './TourTooltip'
 
 const navItems = [
   { to: '/', icon: Home, label: 'Home' },
   { to: '/transactions', icon: ArrowLeftRight, label: 'Transactions' },
-  { to: '/splits', icon: Split, label: 'Splits' },
   { to: '/reports', icon: BarChart2, label: 'Reports' },
   { to: '/settings', icon: Settings, label: 'Settings' },
 ]
@@ -16,7 +15,6 @@ const MAIN_STEPS = [
   { target: 'stat-tiles',        title: 'Monthly Overview',      text: 'Your income, expenses and balance for this month, updated in real time.' },
   { target: 'fab',               title: 'Add a Transaction',     text: 'Tap the + button to quickly log any income or expense.' },
   { target: 'nav-transactions',  title: 'Transactions',          text: 'View, filter and manage all your household transactions here.' },
-  { target: 'nav-splits',        title: 'Splits',                text: 'See all split bills — who owes what for shared expenses.' },
   { target: 'nav-reports',       title: 'Reports',               text: 'Visualise spending by category — monthly or yearly charts.' },
   { target: 'nav-settings',      title: 'Settings',              text: 'Manage your household, invite family members and install the app.' },
   { target: 'invite-code',       title: 'Invite Code',           text: 'Share this code with family so they can join your household.' },

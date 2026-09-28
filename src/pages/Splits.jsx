@@ -3,11 +3,13 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { Trash2, Pencil, ChevronDown, ChevronUp } from 'lucide-react'
 import TransactionForm from '../components/TransactionForm'
+import ConfirmDialog from '../components/ConfirmDialog'
 
 export default function Splits() {
   const { profile, user } = useAuth()
   const [splits, setSplits] = useState([])
   const [loading, setLoading] = useState(true)
+  const [confirmDelete, setConfirmDelete] = useState(null)
   const [expanded, setExpanded] = useState({})
   const [editing, setEditing] = useState(null)
   const [saveError, setSaveError] = useState('')
@@ -123,11 +125,11 @@ export default function Splits() {
     fetchSplits()
   }
 
-  async function deleteSplit(splitId) {
-    if (!confirm('Delete this split and all its transactions?')) return
+  async function doDeleteSplit(splitId) {
     await supabase.from('transactions').delete().eq('split_id', splitId)
     await supabase.from('splits').delete().eq('id', splitId)
     setSplits(prev => prev.filter(s => s.id !== splitId))
+    setConfirmDelete(null)
   }
 
   function toggleExpand(id) {
@@ -161,7 +163,7 @@ export default function Splits() {
                     <button onClick={() => setEditing(s)} className="text-gray-400 hover:text-blue-500">
                       <Pencil size={14} />
                     </button>
-                    <button onClick={() => deleteSplit(s.id)} className="text-gray-400 hover:text-red-500">
+                    <button onClick={() => setConfirmDelete(s.id)} className="text-gray-400 hover:text-red-500">
                       <Trash2 size={14} />
                     </button>
                   </>
@@ -205,6 +207,14 @@ export default function Splits() {
           error={saveError}
           householdId={profile.household_id}
           user={user}
+        />
+      )}
+
+      {confirmDelete && (
+        <ConfirmDialog
+          message="Delete this split and all its transactions?"
+          onConfirm={() => doDeleteSplit(confirmDelete)}
+          onCancel={() => setConfirmDelete(null)}
         />
       )}
     </div>
