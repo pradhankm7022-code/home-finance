@@ -100,10 +100,12 @@ export default function Transactions() {
       .select('id, user_id, amount, split_id')
       .in('split_id', splitIds)
 
-    const userIds = [...new Set((txRows || []).map(t => t.user_id).filter(Boolean))]
+    const memberUserIds = [...new Set((txRows || []).map(t => t.user_id).filter(Boolean))]
+    const creatorIds = [...new Set(splitRows.map(s => s.created_by).filter(Boolean))]
+    const allIds = [...new Set([...memberUserIds, ...creatorIds])]
     let nameMap = {}
-    if (userIds.length > 0) {
-      const { data: profiles } = await supabase.from('profiles').select('id, name').in('id', userIds)
+    if (allIds.length > 0) {
+      const { data: profiles } = await supabase.from('profiles').select('id, name').in('id', allIds)
       profiles?.forEach(p => { nameMap[p.id] = p.name })
     }
     const txBySplit = {}
@@ -111,7 +113,7 @@ export default function Transactions() {
       if (!txBySplit[tx.split_id]) txBySplit[tx.split_id] = []
       txBySplit[tx.split_id].push({ ...tx, name: nameMap[tx.user_id] || 'Unknown' })
     })
-    setSplits(splitRows.map(s => ({ ...s, members: txBySplit[s.id] || [] })))
+    setSplits(splitRows.map(s => ({ ...s, members: txBySplit[s.id] || [], creatorName: nameMap[s.created_by] || 'Unknown' })))
   }
 
   async function ensureCategory(name, type, householdId) {
@@ -302,7 +304,9 @@ export default function Transactions() {
                     <p className="text-sm font-medium text-gray-800 truncate">{t.description || t.categories?.name}</p>
                     <p className="text-xs text-gray-400">
                       {t.categories?.name} · {new Date(t.date).toLocaleDateString()}
-                      {isSplitRow && memberCount > 0 ? ` · ${memberCount} members` : ` · ${t.profiles?.name}`}
+                      {isSplitRow
+                        ? ` · ${memberCount} members · by ${splitObj?.created_by === user.id ? 'you' : (splitObj?.creatorName || 'Unknown')}`
+                        : ` · ${t.profiles?.name}`}
                     </p>
                   </div>
                   {t.split_id && !isSplitRow && (
