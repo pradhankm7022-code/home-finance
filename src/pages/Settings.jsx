@@ -1,5 +1,5 @@
 import { useAuth } from '../context/AuthContext'
-import { Copy, Check, LogOut as LeaveIcon, Download, Share2, Trash2, Pencil } from 'lucide-react'
+import { Copy, Check, LogOut as LeaveIcon, Download, Share2, Trash2, Pencil, ChevronDown, ChevronUp } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
@@ -260,7 +260,7 @@ export default function Settings() {
           className="w-full flex items-center justify-between px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
         >
           <span>Manage Categories</span>
-          <span className="text-gray-400 text-xs">{catOpen ? '▲' : '▼'}</span>
+          <span className="text-gray-400">{catOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}</span>
         </button>
 
         {catOpen && (
