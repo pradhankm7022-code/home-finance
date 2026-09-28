@@ -19,7 +19,7 @@ export default function Settings() {
   const [selectedCatId, setSelectedCatId] = useState('')
   const [editingCat, setEditingCat] = useState(false)
   const [editingName, setEditingName] = useState('')
-  const [catError, setCatError] = useState('')
+  const [catOpen, setCatOpen] = useState(false)
 
   const isCreator = profile?.households?.created_by === user?.id
 
@@ -254,63 +254,74 @@ export default function Settings() {
       </div>
 
       {/* Manage Categories */}
-      <div className="bg-white rounded-2xl border border-gray-100 p-4 mb-4">
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="text-sm font-semibold text-gray-600 uppercase tracking-wide">Manage Categories</h3>
-          <button onClick={deleteUnusedCategories} className="text-xs text-red-500 hover:text-red-600 font-medium">
-            Delete unused
-          </button>
-        </div>
-        {catError && <p className="text-xs text-red-500 mb-3">{catError}</p>}
-        {categories.length === 0 ? (
-          <p className="text-xs text-gray-400 text-center py-2">No categories yet</p>
-        ) : (
-          <>
-            <div className="flex items-center gap-2 mb-3">
-              <select
-                value={selectedCatId}
-                onChange={e => { setSelectedCatId(e.target.value); setEditingCat(false); setCatError('') }}
-                className="flex-1 border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-              >
-                <option value="">Select a category</option>
-                {categories.map(cat => (
-                  <option key={cat.id} value={cat.id}>{cat.name} ({cat.type})</option>
-                ))}
-              </select>
-              <button
-                onClick={() => {
-                  if (!selectedCatId) return
-                  const cat = categories.find(c => c.id === selectedCatId)
-                  setEditingName(cat.name)
-                  setEditingCat(true)
-                  setCatError('')
-                }}
-                className="text-gray-400 hover:text-blue-500 p-1"
-              >
-                <Pencil size={16} />
-              </button>
-              <button
-                onClick={() => selectedCatId && deleteCategory(selectedCatId)}
-                className="text-gray-400 hover:text-red-500 p-1"
-              >
-                <Trash2 size={16} />
+      <div className="bg-white rounded-2xl border border-gray-100 mb-4 overflow-hidden">
+        <button
+          onClick={() => { setCatOpen(o => !o); setCatError('') }}
+          className="w-full flex items-center justify-between px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+        >
+          <span>Manage Categories</span>
+          <span className="text-gray-400 text-xs">{catOpen ? '▲' : '▼'}</span>
+        </button>
+
+        {catOpen && (
+          <div className="px-4 pb-4 border-t border-gray-100 pt-3">
+            <div className="flex items-center justify-between mb-3">
+              <button onClick={deleteUnusedCategories} className="text-xs text-red-500 hover:text-red-600 font-medium">
+                Delete unused
               </button>
             </div>
+            {catError && <p className="text-xs text-red-500 mb-3">{catError}</p>}
+            {categories.length === 0 ? (
+              <p className="text-xs text-gray-400 text-center py-2">No categories yet</p>
+            ) : (
+              <>
+                <div className="flex items-center gap-2 mb-3">
+                  <select
+                    value={selectedCatId}
+                    onChange={e => { setSelectedCatId(e.target.value); setEditingCat(false); setCatError('') }}
+                    className="flex-1 border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                  >
+                    <option value="">Select a category</option>
+                    {categories.map(cat => (
+                      <option key={cat.id} value={cat.id}>{cat.name} ({cat.type})</option>
+                    ))}
+                  </select>
+                  <button
+                    onClick={() => {
+                      if (!selectedCatId) return
+                      const cat = categories.find(c => c.id === selectedCatId)
+                      setEditingName(cat.name)
+                      setEditingCat(true)
+                      setCatError('')
+                    }}
+                    className="text-gray-400 hover:text-blue-500 p-1"
+                  >
+                    <Pencil size={16} />
+                  </button>
+                  <button
+                    onClick={() => selectedCatId && deleteCategory(selectedCatId)}
+                    className="text-gray-400 hover:text-red-500 p-1"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </div>
 
-            {editingCat && selectedCatId && (
-              <div className="flex items-center gap-2">
-                <input
-                  autoFocus
-                  value={editingName}
-                  onChange={e => setEditingName(e.target.value)}
-                  onKeyDown={e => { if (e.key === 'Enter') renameCategory(selectedCatId); if (e.key === 'Escape') setEditingCat(false) }}
-                  className="flex-1 border border-blue-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-                <button onClick={() => renameCategory(selectedCatId)} className="text-xs text-blue-600 font-medium px-2 py-2 hover:underline">Save</button>
-                <button onClick={() => setEditingCat(false)} className="text-xs text-gray-400 px-1 py-2 hover:underline">Cancel</button>
-              </div>
+                {editingCat && selectedCatId && (
+                  <div className="flex items-center gap-2">
+                    <input
+                      autoFocus
+                      value={editingName}
+                      onChange={e => setEditingName(e.target.value)}
+                      onKeyDown={e => { if (e.key === 'Enter') renameCategory(selectedCatId); if (e.key === 'Escape') setEditingCat(false) }}
+                      className="flex-1 border border-blue-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                    <button onClick={() => renameCategory(selectedCatId)} className="text-xs text-blue-600 font-medium px-2 py-2 hover:underline">Save</button>
+                    <button onClick={() => setEditingCat(false)} className="text-xs text-gray-400 px-1 py-2 hover:underline">Cancel</button>
+                  </div>
+                )}
+              </>
             )}
-          </>
+          </div>
         )}
       </div>
 
