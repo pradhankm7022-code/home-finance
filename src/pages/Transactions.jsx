@@ -1,194 +1,9 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
-import { Plus, Pencil, Trash2, X } from 'lucide-react'
+import { Plus, Pencil, Trash2 } from 'lucide-react'
 import { useLocation } from 'react-router-dom'
-
-function CategoryInput({ value, onChange, type, householdId }) {
-  const [input, setInput] = useState(value || '')
-  const [suggestions, setSuggestions] = useState([])
-  const [allCategories, setAllCategories] = useState([])
-  const [showSuggestions, setShowSuggestions] = useState(false)
-  const ref = useRef(null)
-
-  useEffect(() => {
-    loadCategories()
-  }, [type, householdId])
-
-  useEffect(() => {
-    setInput(value || '')
-  }, [value])
-
-  async function loadCategories() {
-    const { data } = await supabase
-      .from('categories')
-      .select('id, name')
-      .eq('household_id', householdId)
-      .or(`type.eq.${type},type.eq.both`)
-      .order('name')
-    setAllCategories(data || [])
-  }
-
-  function handleInput(val) {
-    setInput(val)
-    onChange({ id: null, name: val })
-    if (val.trim()) {
-      setSuggestions(allCategories.filter(c => c.name.toLowerCase().includes(val.toLowerCase())))
-    } else {
-      setSuggestions(allCategories)
-    }
-    setShowSuggestions(true)
-  }
-
-  function handleFocus() {
-    setSuggestions(input.trim() ? allCategories.filter(c => c.name.toLowerCase().includes(input.toLowerCase())) : allCategories)
-    setShowSuggestions(true)
-  }
-
-  function selectSuggestion(cat) {
-    setInput(cat.name)
-    onChange(cat)
-    setShowSuggestions(false)
-  }
-
-  // Hide dropdown on outside click
-  useEffect(() => {
-    function handleClick(e) {
-      if (ref.current && !ref.current.contains(e.target)) setShowSuggestions(false)
-    }
-    document.addEventListener('mousedown', handleClick)
-    return () => document.removeEventListener('mousedown', handleClick)
-  }, [])
-
-  const showCreate = input.trim() && !allCategories.some(c => c.name.toLowerCase() === input.trim().toLowerCase())
-
-  return (
-    <div className="relative" ref={ref}>
-      <input
-        type="text"
-        placeholder={type === 'income' ? 'Category (e.g. Salary)' : 'Category (e.g. Groceries)'}
-        value={input}
-        onChange={e => handleInput(e.target.value)}
-        onFocus={handleFocus}
-        className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-      />
-      {showSuggestions && (suggestions.length > 0 || showCreate) && (
-        <div className="absolute z-10 left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg max-h-48 overflow-y-auto">
-          {suggestions.map(cat => (
-            <button
-              key={cat.id}
-              type="button"
-              onMouseDown={() => selectSuggestion(cat)}
-              className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 first:rounded-t-xl"
-            >
-              {cat.name}
-            </button>
-          ))}
-          {showCreate && (
-            <button
-              type="button"
-              onMouseDown={() => selectSuggestion({ id: null, name: input.trim() })}
-              className="w-full text-left px-4 py-2.5 text-sm text-blue-600 font-medium hover:bg-blue-50 border-t border-gray-100 last:rounded-b-xl flex items-center gap-2"
-            >
-              <Plus size={14} />
-              Create "{input.trim()}"
-            </button>
-          )}
-        </div>
-      )}
-    </div>
-  )
-}
-
-function TransactionForm({ initial, onSave, onCancel, error, householdId }) {
-  const [form, setForm] = useState(initial || {
-    description: '', amount: '', category_id: '', category_name: '', type: 'expense', date: new Date().toISOString().slice(0, 10)
-  })
-  const [saving, setSaving] = useState(false)
-
-  function set(k, v) { setForm(f => ({ ...f, [k]: v })) }
-
-  async function handleSave() {
-    if (saving) return
-    setSaving(true)
-    await onSave(form)
-    setSaving(false)
-  }
-
-  return (
-    <div className="fixed inset-0 bg-black/40 z-50 flex items-end sm:items-center justify-center p-4">
-      <div className="bg-white w-full max-w-sm rounded-2xl p-5 space-y-4">
-        <div className="flex items-center justify-between">
-          <h3 className="font-semibold text-gray-800">{initial ? 'Edit' : 'Add'} Transaction</h3>
-          <button onClick={onCancel}><X size={18} className="text-gray-400" /></button>
-        </div>
-
-        {error && (
-          <div className="bg-red-50 text-red-600 text-sm px-3 py-2 rounded-lg">{error}</div>
-        )}
-
-        {/* Type toggle */}
-        <div className="flex rounded-xl bg-gray-100 p-1">
-          {['expense', 'income'].map(t => (
-            <button
-              key={t}
-              type="button"
-              onClick={() => { set('type', t); set('category_id', ''); set('category_name', '') }}
-              className={`flex-1 py-1.5 text-sm font-medium rounded-lg capitalize transition-colors ${
-                form.type === t
-                  ? t === 'expense' ? 'bg-white shadow text-red-500' : 'bg-white shadow text-green-600'
-                  : 'text-gray-500'
-              }`}
-            >
-              {t}
-            </button>
-          ))}
-        </div>
-
-        <CategoryInput
-          value={form.category_name}
-          onChange={cat => { set('category_id', cat.id); set('category_name', cat.name) }}
-          type={form.type}
-          householdId={householdId}
-        />
-
-        <input
-          type="number"
-          placeholder="Amount"
-          value={form.amount}
-          onChange={e => set('amount', e.target.value)}
-          min="0"
-          step="0.01"
-          className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
-
-        <input
-          type="date"
-          value={form.date}
-          onChange={e => set('date', e.target.value)}
-          className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
-
-        <input
-          type="text"
-          placeholder="Description"
-          value={form.description}
-          onChange={e => set('description', e.target.value)}
-          className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
-
-        <button
-          type="button"
-          onClick={handleSave}
-          disabled={saving}
-          className="w-full bg-blue-600 text-white py-2.5 rounded-xl font-medium text-sm hover:bg-blue-700 transition-colors disabled:opacity-60"
-        >
-          {saving ? 'Saving…' : initial ? 'Update' : 'Add Transaction'}
-        </button>
-      </div>
-    </div>
-  )
-}
+import TransactionForm from '../components/TransactionForm'
 
 export default function Transactions() {
   const { profile, user } = useAuth()
@@ -279,38 +94,152 @@ export default function Transactions() {
     return inserted.id
   }
 
-  async function saveTransaction(form) {
+  async function saveTransaction(form, splitData) {
     setSaveError('')
     if (!form.category_name?.trim()) { setSaveError('Please enter a category'); return }
     if (!form.amount || isNaN(parseFloat(form.amount))) { setSaveError('Please enter a valid amount'); return }
 
     const categoryId = form.category_id || await ensureCategory(form.category_name.trim(), form.type, profile.household_id)
+    const totalAmount = parseFloat(form.amount)
 
-    const payload = {
-      description: form.description,
-      amount: parseFloat(form.amount),
-      category_id: categoryId,
-      type: form.type,
-      date: form.date,
-      household_id: profile.household_id,
-      user_id: user.id
-    }
-    if (editing) {
-      const { error } = await supabase.from('transactions').update(payload).eq('id', editing.id)
-      if (error) { setSaveError(error.message); return }
+    if (splitData) {
+      // --- Split flow ---
+      if (editing?.split_id) {
+        // Update existing split record
+        const { error: splitErr } = await supabase
+          .from('splits')
+          .update({
+            category_id: categoryId,
+            amount: totalAmount,
+            description: form.description,
+            date: form.date,
+            type: form.type,
+          })
+          .eq('id', editing.split_id)
+        if (splitErr) { setSaveError(splitErr.message); return }
+
+        // Get existing member transactions for this split
+        const { data: existing } = await supabase
+          .from('transactions')
+          .select('id, user_id')
+          .eq('split_id', editing.split_id)
+
+        const existingMap = {}
+        existing?.forEach(e => { existingMap[e.user_id] = e.id })
+
+        const newMemberIds = splitData.splits.map(s => s.user_id)
+        const existingMemberIds = Object.keys(existingMap)
+
+        // Delete removed members
+        const toDelete = existingMemberIds.filter(id => !newMemberIds.includes(id))
+        if (toDelete.length > 0) {
+          await supabase.from('transactions').delete().in('id', toDelete.map(id => existingMap[id]))
+        }
+
+        // Update existing or insert new
+        for (const s of splitData.splits) {
+          const txPayload = {
+            description: form.description,
+            amount: s.amount,
+            category_id: categoryId,
+            type: form.type,
+            date: form.date,
+            household_id: profile.household_id,
+            user_id: s.user_id,
+            created_by: user.id,
+            split_id: editing.split_id,
+          }
+          if (existingMap[s.user_id]) {
+            await supabase.from('transactions').update(txPayload).eq('id', existingMap[s.user_id])
+          } else {
+            await supabase.from('transactions').insert(txPayload)
+          }
+        }
+      } else {
+        // Create new split record
+        const { data: split, error: splitErr } = await supabase
+          .from('splits')
+          .insert({
+            household_id: profile.household_id,
+            created_by: user.id,
+            category_id: categoryId,
+            amount: totalAmount,
+            description: form.description,
+            date: form.date,
+            type: form.type,
+          })
+          .select('id')
+          .single()
+        if (splitErr) { setSaveError(splitErr.message); return }
+
+        // Insert one transaction per member
+        const rows = splitData.splits.map(s => ({
+          description: form.description,
+          amount: s.amount,
+          category_id: categoryId,
+          type: form.type,
+          date: form.date,
+          household_id: profile.household_id,
+          user_id: s.user_id,
+          created_by: user.id,
+          split_id: split.id,
+        }))
+        const { error: txErr } = await supabase.from('transactions').insert(rows)
+        if (txErr) { setSaveError(txErr.message); return }
+      }
     } else {
-      const { error } = await supabase.from('transactions').insert(payload)
-      if (error) { setSaveError(error.message); return }
+      // --- Normal (non-split) flow ---
+      const payload = {
+        description: form.description,
+        amount: totalAmount,
+        category_id: categoryId,
+        type: form.type,
+        date: form.date,
+        household_id: profile.household_id,
+        user_id: user.id,
+        created_by: user.id,
+      }
+      if (editing) {
+        const { error } = await supabase.from('transactions').update(payload).eq('id', editing.id)
+        if (error) { setSaveError(error.message); return }
+      } else {
+        const { error } = await supabase.from('transactions').insert(payload)
+        if (error) { setSaveError(error.message); return }
+      }
     }
+
     await fetchTransactions()
     setShowForm(false)
     setEditing(null)
   }
 
-  async function deleteTransaction(id) {
-    if (!confirm('Delete this transaction?')) return
-    const { error } = await supabase.from('transactions').delete().eq('id', id)
-    if (!error) setTransactions(prev => prev.filter(t => t.id !== id))
+  async function startEdit(t) {
+    if (t.split_id) {
+      const { data: split } = await supabase
+        .from('splits')
+        .select('amount')
+        .eq('id', t.split_id)
+        .single()
+      setEditing({ ...t, amount: split?.amount ?? t.amount })
+    } else {
+      setEditing(t)
+    }
+    setShowForm(true)
+  }
+
+  async function deleteTransaction(t) {
+    if (t.split_id) {
+      if (!confirm('This is part of a split. Delete all split transactions?')) return
+      const { error } = await supabase.from('transactions').delete().eq('split_id', t.split_id)
+      if (!error) {
+        await supabase.from('splits').delete().eq('id', t.split_id)
+        setTransactions(prev => prev.filter(tx => tx.split_id !== t.split_id))
+      }
+    } else {
+      if (!confirm('Delete this transaction?')) return
+      const { error } = await supabase.from('transactions').delete().eq('id', t.id)
+      if (!error) setTransactions(prev => prev.filter(tx => tx.id !== t.id))
+    }
   }
 
   const fmt = (n) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(n)
@@ -369,16 +298,19 @@ export default function Transactions() {
                 <p className="text-sm font-medium text-gray-800 truncate">{t.description || t.categories?.name}</p>
                 <p className="text-xs text-gray-400">{t.categories?.name} · {new Date(t.date).toLocaleDateString()} · {t.profiles?.name}</p>
               </div>
+              {t.split_id && (
+                <span className="text-xs text-blue-500 font-medium px-1.5 py-0.5 bg-blue-50 rounded-full">split</span>
+              )}
               <div className="flex items-center gap-2 ml-2">
                 <span className={`font-semibold text-sm ${t.type === 'income' ? 'text-green-600' : 'text-red-500'}`}>
                   {t.type === 'income' ? '+' : '-'}{fmt(t.amount)}
                 </span>
-                {t.user_id === user.id && (
+                {t.created_by === user.id && !t.split_id && (
                   <>
-                    <button onClick={() => { setEditing(t); setShowForm(true) }} className="text-gray-400 hover:text-blue-500">
+                    <button onClick={() => startEdit(t)} className="text-gray-400 hover:text-blue-500">
                       <Pencil size={14} />
                     </button>
-                    <button onClick={() => deleteTransaction(t.id)} className="text-gray-400 hover:text-red-500">
+                    <button onClick={() => deleteTransaction(t)} className="text-gray-400 hover:text-red-500">
                       <Trash2 size={14} />
                     </button>
                   </>
@@ -391,11 +323,17 @@ export default function Transactions() {
 
       {showForm && (
         <TransactionForm
-          initial={editing ? { ...editing, category_name: editing.categories?.name || '', date: editing.date?.slice(0, 10) } : null}
+          initial={editing ? {
+            ...editing,
+            category_name: editing.categories?.name || '',
+            date: editing.date?.slice(0, 10),
+            splitData: editing.split_id ? { splits: [], tab: 0, shares: {}, amounts: {}, percents: {} } : null
+          } : null}
           onSave={saveTransaction}
           onCancel={() => { setShowForm(false); setEditing(null); setSaveError('') }}
           error={saveError}
           householdId={profile.household_id}
+          user={user}
         />
       )}
     </div>

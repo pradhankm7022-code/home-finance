@@ -9,6 +9,7 @@ import ResetPassword from './pages/ResetPassword'
 import SetupHousehold from './pages/SetupHousehold'
 import Dashboard from './pages/Dashboard'
 import Transactions from './pages/Transactions'
+import Splits from './pages/Splits'
 import Reports from './pages/Reports'
 import Settings from './pages/Settings'
 
@@ -32,6 +33,11 @@ export default function App() {
           <Route path="/transactions" element={
             <ProtectedRoute>
               <Layout><Transactions /></Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/splits" element={
+            <ProtectedRoute>
+              <Layout><Splits /></Layout>
             </ProtectedRoute>
           } />
           <Route path="/reports" element={
