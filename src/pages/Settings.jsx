@@ -20,6 +20,7 @@ export default function Settings() {
   const [editingCat, setEditingCat] = useState(false)
   const [editingName, setEditingName] = useState('')
   const [catOpen, setCatOpen] = useState(false)
+  const [catError, setCatError] = useState('')
 
   const isCreator = profile?.households?.created_by === user?.id
 
