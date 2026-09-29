@@ -358,12 +358,13 @@ export default function Transactions() {
           className="w-full border border-gray-200 rounded-xl px-4 py-2 text-sm mb-3 focus:outline-none focus:ring-2 focus:ring-blue-500" />
       )}
 
-      {/* List */}
-      {loading ? (
-        <div className="text-center py-10 text-gray-400 text-sm">Loading…</div>
-      ) : filtered.length === 0 ? (
-        <div className="text-center py-10 text-gray-400 text-sm">No transactions found</div>
-      ) : (
+      {/* Transaction list — hidden on recurring view */}
+      {filter !== 'recurring' && (
+        loading ? (
+          <div className="text-center py-10 text-gray-400 text-sm">Loading…</div>
+        ) : filtered.length === 0 ? (
+          <div className="text-center py-10 text-gray-400 text-sm">No transactions found</div>
+        ) : (
         <div className="space-y-2">
           {filtered.map(t => {
             const isSplitRow = filter === 'splits' && t.split_id
@@ -421,7 +422,7 @@ export default function Transactions() {
             )
           })}
         </div>
-      )}
+      ))}
 
       {/* Recurring view */}
       {filter === 'recurring' && (
