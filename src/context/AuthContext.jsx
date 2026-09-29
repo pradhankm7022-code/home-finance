@@ -3,34 +3,22 @@ import { supabase } from '../lib/supabase'
 
 const AuthContext = createContext({})
 
-const CACHE_KEY = 'ml_profile_cache'
-
-function loadCache() {
-  try { return JSON.parse(localStorage.getItem(CACHE_KEY)) } catch { return null }
-}
-function saveCache(data) {
-  try { localStorage.setItem(CACHE_KEY, JSON.stringify(data)) } catch {}
-}
-function clearCache() {
-  try { localStorage.removeItem(CACHE_KEY) } catch {}
-}
-
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null)
-  const [profile, setProfile] = useState(() => loadCache())
-  const [loading, setLoading] = useState(() => !loadCache())
+  const [profile, setProfile] = useState(null)
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null)
       if (session?.user) fetchProfile(session.user.id)
-      else { clearCache(); setProfile(null); setLoading(false) }
+      else setLoading(false)
     })
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null)
       if (session?.user) fetchProfile(session.user.id)
-      else { clearCache(); setProfile(null); setLoading(false) }
+      else { setProfile(null); setLoading(false) }
     })
 
     return () => subscription.unsubscribe()
@@ -43,19 +31,16 @@ export function AuthProvider({ children }) {
       .eq('id', userId)
       .single()
 
-    let merged
     if (profileData?.household_id) {
       const { data: householdData } = await supabase
         .from('households')
         .select('*')
         .eq('id', profileData.household_id)
         .single()
-      merged = { ...profileData, households: householdData }
+      setProfile({ ...profileData, households: householdData })
     } else {
-      merged = profileData
+      setProfile(profileData)
     }
-    saveCache(merged)
-    setProfile(merged)
     setLoading(false)
   }
 
@@ -76,7 +61,6 @@ export function AuthProvider({ children }) {
   }
 
   async function signOut() {
-    clearCache()
     await supabase.auth.signOut()
   }
 
