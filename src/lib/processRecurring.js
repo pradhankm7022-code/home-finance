@@ -9,16 +9,30 @@ export async function processDueRecurring(supabase, householdId) {
     .gte('end_date', today)
 
   for (const r of due || []) {
-    await supabase.from('transactions').insert({
-      household_id: r.household_id,
-      user_id: r.created_by,
-      created_by: r.created_by,
-      description: r.description,
-      amount: r.amount,
-      category_id: r.category_id,
-      type: r.type,
-      date: r.next_date,
-    })
+    if (r.split_config?.splits?.length > 0) {
+      const rows = r.split_config.splits.map(s => ({
+        household_id: r.household_id,
+        user_id: s.user_id,
+        created_by: r.created_by,
+        description: r.description,
+        amount: s.amount,
+        category_id: r.category_id,
+        type: r.type,
+        date: r.next_date,
+      }))
+      await supabase.from('transactions').insert(rows)
+    } else {
+      await supabase.from('transactions').insert({
+        household_id: r.household_id,
+        user_id: r.created_by,
+        created_by: r.created_by,
+        description: r.description,
+        amount: r.amount,
+        category_id: r.category_id,
+        type: r.type,
+        date: r.next_date,
+      })
+    }
     const next = computeNextDate(r)
     await supabase.from('recurring_transactions').update({ next_date: next }).eq('id', r.id)
   }

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { supabase } from '../lib/supabase'
-import { Plus, X } from 'lucide-react'
+import { Plus, X, Split } from 'lucide-react'
+import SplitBill from './SplitBill'
 
 function CategoryInput({ value, onChange, type, householdId }) {
   const [input, setInput] = useState(value || '')
@@ -87,7 +88,7 @@ const FREQ = [
   { value: 'custom', label: 'Every N days' },
 ]
 
-export default function RecurringForm({ initial, onSave, onCancel, error, householdId }) {
+export default function RecurringForm({ initial, onSave, onCancel, error, householdId, user }) {
   const today = new Date().toISOString().slice(0, 10)
   const [form, setForm] = useState(initial || {
     type: 'expense',
@@ -101,13 +102,20 @@ export default function RecurringForm({ initial, onSave, onCancel, error, househ
     end_date: '9999-01-01',
   })
   const [saving, setSaving] = useState(false)
+  const [showSplit, setShowSplit] = useState(false)
+  const [splitData, setSplitData] = useState(initial?.split_config || null)
 
   function set(k, v) { setForm(f => ({ ...f, [k]: v })) }
+
+  function handleSplitConfirm(data) {
+    setSplitData(data)
+    setShowSplit(false)
+  }
 
   async function handleSave() {
     if (saving) return
     setSaving(true)
-    await onSave(form)
+    await onSave(form, splitData)
     setSaving(false)
   }
 
@@ -143,15 +151,26 @@ export default function RecurringForm({ initial, onSave, onCancel, error, househ
           householdId={householdId}
         />
 
-        <input
-          type="number"
-          placeholder="Amount"
-          value={form.amount}
-          onChange={e => set('amount', e.target.value)}
-          min="0"
-          step="0.01"
-          className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
+        <div className="flex items-center gap-2">
+          <input
+            type="number"
+            placeholder="Amount"
+            value={form.amount}
+            onChange={e => { set('amount', e.target.value); setSplitData(null) }}
+            min="0"
+            step="0.01"
+            className="flex-1 border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+          {form.amount && parseFloat(form.amount) > 0 && (
+            <button type="button" onClick={() => setShowSplit(true)}
+              className={`flex items-center gap-1 px-3 py-2.5 rounded-xl text-xs font-medium border transition-colors ${
+                splitData ? 'bg-blue-600 text-white border-blue-600' : 'border-gray-200 text-gray-500 hover:border-blue-400 hover:text-blue-500'
+              }`}>
+              <Split size={14} />
+              {splitData ? `${splitData.splits.length} split` : 'Split'}
+            </button>
+          )}
+        </div>
 
         <input type="text" placeholder="Description (e.g. House Rent)"
           value={form.description} onChange={e => set('description', e.target.value)}
@@ -203,6 +222,17 @@ export default function RecurringForm({ initial, onSave, onCancel, error, househ
           {saving ? 'Saving…' : initial ? 'Update' : 'Add Recurring'}
         </button>
       </div>
+
+      {showSplit && (
+        <SplitBill
+          amount={parseFloat(form.amount)}
+          householdId={householdId}
+          currentUser={user}
+          onConfirm={handleSplitConfirm}
+          onCancel={() => setShowSplit(false)}
+          initial={splitData ? { splits: splitData.splits, tab: splitData.tab, shares: splitData.shares, amounts: splitData.amounts, percents: splitData.percents } : null}
+        />
+      )}
     </div>
   )
 }

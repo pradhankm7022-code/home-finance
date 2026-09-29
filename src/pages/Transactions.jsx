@@ -269,7 +269,7 @@ export default function Transactions() {
     setRecurring(data || [])
   }
 
-  async function saveRecurring(form) {
+  async function saveRecurring(form, splitData) {
     setRecurringError('')
     if (!form.category_name?.trim()) { setRecurringError('Please enter a category'); return }
     if (!form.amount || isNaN(parseFloat(form.amount))) { setRecurringError('Please enter a valid amount'); return }
@@ -291,6 +291,7 @@ export default function Transactions() {
       next_date: form.start_date,
       end_date: form.end_date || '9999-01-01',
       active: true,
+      split_config: splitData || null,
     }
 
     if (editingRecurring) {
@@ -451,6 +452,9 @@ export default function Transactions() {
                       <span className={`font-semibold text-sm ${r.type === 'income' ? 'text-green-600' : 'text-red-500'}`}>
                         {r.type === 'income' ? '+' : '-'}{fmt(r.amount)}
                       </span>
+                      {r.split_config?.splits?.length > 0 && (
+                        <span className="text-xs text-blue-500 font-medium px-1.5 py-0.5 bg-blue-50 rounded-full">{r.split_config.splits.length} split</span>
+                      )}
                       {r.created_by === user.id && (
                         <>
                           <button onClick={() => { setEditingRecurring(r); setRecurringError(''); setShowRecurringForm(true) }} className="text-gray-400 hover:text-blue-500"><Pencil size={14} /></button>
@@ -519,11 +523,13 @@ export default function Transactions() {
             category_name: editingRecurring.categories?.name || '',
             interval_days: String(editingRecurring.interval_days || 30),
             end_date: editingRecurring.end_date || '9999-01-01',
+            split_config: editingRecurring.split_config || null,
           } : null}
           onSave={saveRecurring}
           onCancel={() => { setShowRecurringForm(false); setEditingRecurring(null); setRecurringError('') }}
           error={recurringError}
           householdId={profile.household_id}
+          user={user}
         />
       )}
 
