@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
-import { Plus, Pencil, Trash2, ChevronDown, ChevronUp } from 'lucide-react'
+import { Plus, Pencil, Trash2, ChevronDown, ChevronUp, RefreshCw } from 'lucide-react'
 import { useLocation, useSearchParams } from 'react-router-dom'
 import TransactionForm from '../components/TransactionForm'
+import RecurringForm from '../components/RecurringForm'
 import ConfirmDialog from '../components/ConfirmDialog'
+import { processDueRecurring } from '../lib/processRecurring'
 
 export default function Transactions() {
   const { profile, user } = useAuth()
@@ -29,6 +31,13 @@ export default function Transactions() {
   const [editingSplit, setEditingSplit] = useState(null)
   const [splitSaveError, setSplitSaveError] = useState('')
   const [confirmDeleteSplit, setConfirmDeleteSplit] = useState(null)
+
+  // Recurring state
+  const [recurring, setRecurring] = useState([])
+  const [showRecurringForm, setShowRecurringForm] = useState(false)
+  const [editingRecurring, setEditingRecurring] = useState(null)
+  const [recurringError, setRecurringError] = useState('')
+  const [confirmDeleteRecurring, setConfirmDeleteRecurring] = useState(null)
 
   useEffect(() => {
     if (location.state?.openForm) setShowForm(true)
@@ -57,8 +66,10 @@ export default function Transactions() {
 
   useEffect(() => {
     if (!profile?.household_id) return
+    processDueRecurring(supabase, profile.household_id).then(() => fetchTransactions())
     fetchTransactions()
     fetchSplits()
+    fetchRecurring()
 
     const channel = supabase
       .channel('transactions-list')
@@ -249,6 +260,57 @@ export default function Transactions() {
     setExpanded(e => ({ ...e, [id]: !e[id] }))
   }
 
+  async function fetchRecurring() {
+    const { data } = await supabase
+      .from('recurring_transactions')
+      .select('*, categories(id, name)')
+      .eq('household_id', profile.household_id)
+      .order('next_date', { ascending: true })
+    setRecurring(data || [])
+  }
+
+  async function saveRecurring(form) {
+    setRecurringError('')
+    if (!form.category_name?.trim()) { setRecurringError('Please enter a category'); return }
+    if (!form.amount || isNaN(parseFloat(form.amount))) { setRecurringError('Please enter a valid amount'); return }
+    if (form.frequency === 'custom' && (!form.interval_days || parseInt(form.interval_days) < 1)) {
+      setRecurringError('Please enter a valid interval'); return
+    }
+
+    const categoryId = form.category_id || await ensureCategory(form.category_name.trim(), form.type, profile.household_id)
+    const payload = {
+      household_id: profile.household_id,
+      created_by: user.id,
+      description: form.description,
+      amount: parseFloat(form.amount),
+      category_id: categoryId,
+      type: form.type,
+      frequency: form.frequency,
+      interval_days: form.frequency === 'custom' ? parseInt(form.interval_days) : null,
+      start_date: form.start_date,
+      next_date: form.start_date,
+      active: true,
+    }
+
+    if (editingRecurring) {
+      const { error } = await supabase.from('recurring_transactions').update(payload).eq('id', editingRecurring.id)
+      if (error) { setRecurringError(error.message); return }
+    } else {
+      const { error } = await supabase.from('recurring_transactions').insert(payload)
+      if (error) { setRecurringError(error.message); return }
+    }
+    setShowRecurringForm(false)
+    setEditingRecurring(null)
+    setRecurringError('')
+    fetchRecurring()
+  }
+
+  async function doDeleteRecurring(id) {
+    await supabase.from('recurring_transactions').delete().eq('id', id)
+    setRecurring(prev => prev.filter(r => r.id !== id))
+    setConfirmDeleteRecurring(null)
+  }
+
   const fmt = (n) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(n)
 
   // For non-splits filters: deduplicate split transactions (show only one row per split_id)
@@ -279,7 +341,7 @@ export default function Transactions() {
 
       {/* Filter bar */}
       <div className="flex gap-2 mb-3 overflow-x-auto pb-1">
-        {[['all', 'All'], ['mine', 'Mine'], ['income', 'Income'], ['expense', 'Expense'], ['splits', 'Splits']].map(([val, label]) => (
+        {[['all', 'All'], ['mine', 'Mine'], ['income', 'Income'], ['expense', 'Expense'], ['splits', 'Splits'], ['recurring', 'Recurring']].map(([val, label]) => (
           <button key={val} onClick={() => setFilter(val)}
             className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap transition-colors flex-shrink-0 ${
               filter === val ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600'
@@ -289,9 +351,11 @@ export default function Transactions() {
         ))}
       </div>
 
-      {/* Search */}
-      <input type="text" placeholder="Search…" value={search} onChange={e => setSearch(e.target.value)}
-        className="w-full border border-gray-200 rounded-xl px-4 py-2 text-sm mb-3 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+      {/* Search — hide on recurring view */}
+      {filter !== 'recurring' && (
+        <input type="text" placeholder="Search…" value={search} onChange={e => setSearch(e.target.value)}
+          className="w-full border border-gray-200 rounded-xl px-4 py-2 text-sm mb-3 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+      )}
 
       {/* List */}
       {loading ? (
@@ -358,6 +422,50 @@ export default function Transactions() {
         </div>
       )}
 
+      {/* Recurring view */}
+      {filter === 'recurring' && (
+        <div>
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-xs text-gray-500">{recurring.length} recurring {recurring.length === 1 ? 'entry' : 'entries'}</p>
+            <button onClick={() => { setEditingRecurring(null); setRecurringError(''); setShowRecurringForm(true) }}
+              className="flex items-center gap-1 text-xs font-medium text-blue-600 bg-blue-50 px-3 py-1.5 rounded-full">
+              <Plus size={12} /> Add Recurring
+            </button>
+          </div>
+          {recurring.length === 0 ? (
+            <div className="text-center py-10 text-gray-400 text-sm">No recurring transactions yet.</div>
+          ) : (
+            <div className="space-y-2">
+              {recurring.map(r => {
+                const freqLabel = r.frequency === 'weekly' ? 'Weekly' : r.frequency === 'monthly' ? 'Monthly' : `Every ${r.interval_days}d`
+                return (
+                  <div key={r.id} className="bg-white rounded-xl border border-gray-100 px-4 py-3 flex items-center gap-2">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-gray-800 truncate">{r.description || r.categories?.name}</p>
+                      <p className="text-xs text-gray-400">
+                        {r.categories?.name} · Next: {new Date(r.next_date).toLocaleDateString()}
+                      </p>
+                    </div>
+                    <span className="text-xs font-medium text-purple-600 bg-purple-50 px-2 py-0.5 rounded-full flex items-center gap-1">
+                      <RefreshCw size={10} />{freqLabel}
+                    </span>
+                    <span className={`font-semibold text-sm ${r.type === 'income' ? 'text-green-600' : 'text-red-500'}`}>
+                      {r.type === 'income' ? '+' : '-'}{fmt(r.amount)}
+                    </span>
+                    {r.created_by === user.id && (
+                      <>
+                        <button onClick={() => { setEditingRecurring(r); setRecurringError(''); setShowRecurringForm(true) }} className="text-gray-400 hover:text-blue-500"><Pencil size={14} /></button>
+                        <button onClick={() => setConfirmDeleteRecurring(r.id)} className="text-gray-400 hover:text-red-500"><Trash2 size={14} /></button>
+                      </>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Transaction form */}
       {showForm && (
         <TransactionForm
@@ -388,6 +496,24 @@ export default function Transactions() {
 
       {confirmDeleteSplit && (
         <ConfirmDialog message="Delete this split and all its transactions?" onConfirm={() => doDeleteSplit(confirmDeleteSplit)} onCancel={() => setConfirmDeleteSplit(null)} />
+      )}
+
+      {showRecurringForm && (
+        <RecurringForm
+          initial={editingRecurring ? {
+            ...editingRecurring,
+            category_name: editingRecurring.categories?.name || '',
+            interval_days: String(editingRecurring.interval_days || 30),
+          } : null}
+          onSave={saveRecurring}
+          onCancel={() => { setShowRecurringForm(false); setEditingRecurring(null); setRecurringError('') }}
+          error={recurringError}
+          householdId={profile.household_id}
+        />
+      )}
+
+      {confirmDeleteRecurring && (
+        <ConfirmDialog message="Delete this recurring transaction?" onConfirm={() => doDeleteRecurring(confirmDeleteRecurring)} onCancel={() => setConfirmDeleteRecurring(null)} />
       )}
     </div>
   )
