@@ -104,7 +104,7 @@ export default function Dashboard() {
             <div key={t.id} className="bg-white rounded-xl px-4 py-3 flex items-center justify-between border border-gray-100">
               <div>
                 <p className="text-sm font-medium text-gray-800">{t.description}</p>
-                <p className="text-xs text-gray-400">{t.categories?.name} · {new Date(t.date).toLocaleDateString()}</p>
+                <p className="text-xs text-gray-400">{t.categories?.name} · {new Date(t.date).toLocaleDateString('en-GB')}</p>
               </div>
               <span className={`font-semibold text-sm ${t.type === 'income' ? 'text-green-600' : 'text-red-500'}`}>
                 {t.type === 'income' ? '+' : '-'}{fmt(t.amount)}
