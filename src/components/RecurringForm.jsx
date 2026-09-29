@@ -192,9 +192,8 @@ export default function RecurringForm({ initial, onSave, onCancel, error, househ
           </div>
           <div>
             <p className="text-xs text-gray-500 mb-2">End date</p>
-            <input type="date" value={form.end_date === '9999-01-01' ? '' : form.end_date}
+            <input type="date" value={form.end_date || '9999-01-01'}
               onChange={e => set('end_date', e.target.value || '9999-01-01')}
-              placeholder="No end"
               className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
           </div>
         </div>
