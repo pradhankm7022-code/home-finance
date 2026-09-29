@@ -2,13 +2,14 @@ import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { Plus, Pencil, Trash2, ChevronDown, ChevronUp } from 'lucide-react'
-import { useLocation } from 'react-router-dom'
+import { useLocation, useSearchParams } from 'react-router-dom'
 import TransactionForm from '../components/TransactionForm'
 import ConfirmDialog from '../components/ConfirmDialog'
 
 export default function Transactions() {
   const { profile, user } = useAuth()
   const location = useLocation()
+  const [searchParams] = useSearchParams()
 
   const [transactions, setTransactions] = useState([])
   const [loading, setLoading] = useState(true)
@@ -33,6 +34,14 @@ export default function Transactions() {
     if (location.state?.openForm) setShowForm(true)
     if (location.state?.filter) setFilter(location.state.filter)
   }, [location.state])
+
+  useEffect(() => {
+    if (searchParams.get('action') === 'add') {
+      const type = searchParams.get('type')
+      setEditing(type ? { type } : null)
+      setShowForm(true)
+    }
+  }, [])
 
   useEffect(() => {
     if (showForm) window.history.pushState({ modal: true }, '')
