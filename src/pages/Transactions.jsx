@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
-import { Plus, Pencil, Trash2, ChevronDown, ChevronUp, RefreshCw } from 'lucide-react'
+import { Plus, Pencil, Trash2, ChevronDown, ChevronUp } from 'lucide-react'
 import { useLocation, useSearchParams } from 'react-router-dom'
 import TransactionForm from '../components/TransactionForm'
 import RecurringForm from '../components/RecurringForm'
@@ -289,6 +289,7 @@ export default function Transactions() {
       interval_days: form.frequency === 'custom' ? parseInt(form.interval_days) : null,
       start_date: form.start_date,
       next_date: form.start_date,
+      end_date: form.end_date || '9999-01-01',
       active: true,
     }
 
@@ -435,29 +436,41 @@ export default function Transactions() {
           {recurring.length === 0 ? (
             <div className="text-center py-10 text-gray-400 text-sm">No recurring transactions yet.</div>
           ) : (
-            <div className="space-y-2">
+            <div className="space-y-3">
               {recurring.map(r => {
-                const freqLabel = r.frequency === 'weekly' ? 'Weekly' : r.frequency === 'monthly' ? 'Monthly' : `Every ${r.interval_days}d`
+                const freqLabel = r.frequency === 'weekly' ? 'Weekly' : r.frequency === 'monthly' ? 'Monthly' : `Every ${r.interval_days} days`
+                const hasEnd = r.end_date && r.end_date !== '9999-01-01'
                 return (
-                  <div key={r.id} className="bg-white rounded-xl border border-gray-100 px-4 py-3 flex items-center gap-2">
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-gray-800 truncate">{r.description || r.categories?.name}</p>
-                      <p className="text-xs text-gray-400">
-                        {r.categories?.name} · Next: {new Date(r.next_date).toLocaleDateString()}
-                      </p>
+                  <div key={r.id} className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
+                    <div className="flex items-center px-4 py-3 gap-2">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-800 truncate">{r.description || r.categories?.name}</p>
+                        <p className="text-xs text-gray-400">{r.categories?.name} · {freqLabel}</p>
+                      </div>
+                      <span className={`font-semibold text-sm ${r.type === 'income' ? 'text-green-600' : 'text-red-500'}`}>
+                        {r.type === 'income' ? '+' : '-'}{fmt(r.amount)}
+                      </span>
+                      {r.created_by === user.id && (
+                        <>
+                          <button onClick={() => { setEditingRecurring(r); setRecurringError(''); setShowRecurringForm(true) }} className="text-gray-400 hover:text-blue-500"><Pencil size={14} /></button>
+                          <button onClick={() => setConfirmDeleteRecurring(r.id)} className="text-gray-400 hover:text-red-500"><Trash2 size={14} /></button>
+                        </>
+                      )}
                     </div>
-                    <span className="text-xs font-medium text-purple-600 bg-purple-50 px-2 py-0.5 rounded-full flex items-center gap-1">
-                      <RefreshCw size={10} />{freqLabel}
-                    </span>
-                    <span className={`font-semibold text-sm ${r.type === 'income' ? 'text-green-600' : 'text-red-500'}`}>
-                      {r.type === 'income' ? '+' : '-'}{fmt(r.amount)}
-                    </span>
-                    {r.created_by === user.id && (
-                      <>
-                        <button onClick={() => { setEditingRecurring(r); setRecurringError(''); setShowRecurringForm(true) }} className="text-gray-400 hover:text-blue-500"><Pencil size={14} /></button>
-                        <button onClick={() => setConfirmDeleteRecurring(r.id)} className="text-gray-400 hover:text-red-500"><Trash2 size={14} /></button>
-                      </>
-                    )}
+                    <div className="border-t border-gray-100 px-4 py-2.5 grid grid-cols-3 gap-2">
+                      <div>
+                        <p className="text-xs text-gray-400">Start</p>
+                        <p className="text-xs font-medium text-gray-700">{new Date(r.start_date).toLocaleDateString()}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-400">End</p>
+                        <p className="text-xs font-medium text-gray-700">{hasEnd ? new Date(r.end_date).toLocaleDateString() : 'No end'}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-400">Next due</p>
+                        <p className="text-xs font-medium text-gray-700">{new Date(r.next_date).toLocaleDateString()}</p>
+                      </div>
+                    </div>
                   </div>
                 )
               })}
@@ -504,6 +517,7 @@ export default function Transactions() {
             ...editingRecurring,
             category_name: editingRecurring.categories?.name || '',
             interval_days: String(editingRecurring.interval_days || 30),
+            end_date: editingRecurring.end_date || '9999-01-01',
           } : null}
           onSave={saveRecurring}
           onCancel={() => { setShowRecurringForm(false); setEditingRecurring(null); setRecurringError('') }}

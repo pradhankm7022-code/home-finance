@@ -98,6 +98,7 @@ export default function RecurringForm({ initial, onSave, onCancel, error, househ
     frequency: 'monthly',
     interval_days: '30',
     start_date: today,
+    end_date: '9999-01-01',
   })
   const [saving, setSaving] = useState(false)
 
@@ -112,7 +113,7 @@ export default function RecurringForm({ initial, onSave, onCancel, error, househ
 
   return (
     <div className="fixed inset-0 bg-black/40 z-50 flex items-end sm:items-center justify-center p-4">
-      <div className="bg-white w-full max-w-sm rounded-2xl p-5 space-y-4">
+      <div className="bg-white w-full max-w-sm rounded-2xl p-5 space-y-4 max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between">
           <h3 className="font-semibold text-gray-800">{initial ? 'Edit' : 'Add'} Recurring</h3>
           <button onClick={onCancel}><X size={18} className="text-gray-400" /></button>
@@ -182,11 +183,20 @@ export default function RecurringForm({ initial, onSave, onCancel, error, househ
           )}
         </div>
 
-        {/* Start date */}
-        <div>
-          <p className="text-xs text-gray-500 mb-2">Start date</p>
-          <input type="date" value={form.start_date} onChange={e => set('start_date', e.target.value)}
-            className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+        {/* Start & End date */}
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <p className="text-xs text-gray-500 mb-2">Start date</p>
+            <input type="date" value={form.start_date} onChange={e => set('start_date', e.target.value)}
+              className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+          </div>
+          <div>
+            <p className="text-xs text-gray-500 mb-2">End date</p>
+            <input type="date" value={form.end_date === '9999-01-01' ? '' : form.end_date}
+              onChange={e => set('end_date', e.target.value || '9999-01-01')}
+              placeholder="No end"
+              className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+          </div>
         </div>
 
         <button type="button" onClick={handleSave} disabled={saving}

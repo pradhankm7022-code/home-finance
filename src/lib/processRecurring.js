@@ -6,6 +6,7 @@ export async function processDueRecurring(supabase, householdId) {
     .eq('household_id', householdId)
     .eq('active', true)
     .lte('next_date', today)
+    .gte('end_date', today)
 
   for (const r of due || []) {
     await supabase.from('transactions').insert({
