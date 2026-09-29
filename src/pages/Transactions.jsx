@@ -379,7 +379,7 @@ export default function Transactions() {
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-gray-800 truncate">{t.description || t.categories?.name}</p>
                     <p className="text-xs text-gray-400">
-                      {t.categories?.name} · {new Date(t.date).toLocaleDateString('en-GB')}
+                      {t.categories?.name} · {new Date(t.date).toLocaleDateString()}
                       {isSplitRow
                         ? ` · ${memberCount} members · by ${splitObj?.created_by === user.id ? 'you' : (splitObj?.creatorName || 'Unknown')}`
                         : ` · ${t.profiles?.name}`}
@@ -465,15 +465,15 @@ export default function Transactions() {
                     <div className="border-t border-gray-100 px-4 py-2.5 grid grid-cols-3 gap-2">
                       <div>
                         <p className="text-xs text-gray-400">Start</p>
-                        <p className="text-xs font-medium text-gray-700">{new Date(r.start_date).toLocaleDateString('en-GB')}</p>
+                        <p className="text-xs font-medium text-gray-700">{new Date(r.start_date).toLocaleDateString()}</p>
                       </div>
                       <div>
                         <p className="text-xs text-gray-400">End</p>
-                        <p className="text-xs font-medium text-gray-700">{hasEnd ? new Date(r.end_date).toLocaleDateString('en-GB') : 'No end'}</p>
+                        <p className="text-xs font-medium text-gray-700">{hasEnd ? new Date(r.end_date).toLocaleDateString() : 'No end'}</p>
                       </div>
                       <div>
                         <p className="text-xs text-gray-400">Next due</p>
-                        <p className="text-xs font-medium text-gray-700">{new Date(r.next_date).toLocaleDateString('en-GB')}</p>
+                        <p className="text-xs font-medium text-gray-700">{new Date(r.next_date).toLocaleDateString()}</p>
                       </div>
                     </div>
                   </div>

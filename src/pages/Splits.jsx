@@ -153,7 +153,7 @@ export default function Splits() {
               <div className="flex items-center px-4 py-3 gap-3">
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-gray-800 truncate">{s.description || s.categories?.name}</p>
-                  <p className="text-xs text-gray-400">{s.categories?.name} · {new Date(s.date).toLocaleDateString('en-GB')} · {s.members.length} members</p>
+                  <p className="text-xs text-gray-400">{s.categories?.name} · {new Date(s.date).toLocaleDateString()} · {s.members.length} members</p>
                 </div>
                 <span className={`font-semibold text-sm ${s.type === 'income' ? 'text-green-600' : 'text-red-500'}`}>
                   {s.type === 'income' ? '+' : '-'}{fmt(s.amount)}
