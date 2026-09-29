@@ -10,6 +10,16 @@ export async function processDueRecurring(supabase, householdId) {
 
   for (const r of due || []) {
     if (r.split_config?.splits?.length > 0) {
+      const { data: split } = await supabase.from('splits').insert({
+        household_id: r.household_id,
+        created_by: r.created_by,
+        category_id: r.category_id,
+        amount: r.amount,
+        description: r.description,
+        date: r.next_date,
+        type: r.type,
+      }).select('id').single()
+
       const rows = r.split_config.splits.map(s => ({
         household_id: r.household_id,
         user_id: s.user_id,
@@ -19,6 +29,7 @@ export async function processDueRecurring(supabase, householdId) {
         category_id: r.category_id,
         type: r.type,
         date: r.next_date,
+        split_id: split.id,
       }))
       await supabase.from('transactions').insert(rows)
     } else {
