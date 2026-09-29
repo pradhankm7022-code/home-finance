@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider } from './context/AuthContext'
 import ProtectedRoute from './components/ProtectedRoute'
@@ -9,8 +10,9 @@ import ResetPassword from './pages/ResetPassword'
 import SetupHousehold from './pages/SetupHousehold'
 import Dashboard from './pages/Dashboard'
 import Transactions from './pages/Transactions'
-import Reports from './pages/Reports'
 import Settings from './pages/Settings'
+
+const Reports = lazy(() => import('./pages/Reports'))
 
 export default function App() {
   return (
@@ -36,7 +38,11 @@ export default function App() {
           } />
           <Route path="/reports" element={
             <ProtectedRoute>
-              <Layout><Reports /></Layout>
+              <Layout>
+                <Suspense fallback={<div className="flex items-center justify-center h-40 text-gray-400 text-sm">Loading…</div>}>
+                  <Reports />
+                </Suspense>
+              </Layout>
             </ProtectedRoute>
           } />
           <Route path="/settings" element={
