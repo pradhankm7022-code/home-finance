@@ -342,10 +342,10 @@ export default function Transactions() {
       </div>
 
       {/* Filter bar */}
-      <div className="flex gap-2 mb-3 overflow-x-auto pb-1">
+      <div className="flex gap-1.5 mb-3 overflow-x-auto pb-1">
         {[['all', 'All'], ['mine', 'Mine'], ['income', 'Income'], ['expense', 'Expense'], ['splits', 'Splits'], ['recurring', 'Recurring']].map(([val, label]) => (
           <button key={val} onClick={() => setFilter(val)}
-            className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap transition-colors flex-shrink-0 ${
+            className={`px-2.5 py-0.5 rounded-full text-[11px] font-medium whitespace-nowrap transition-colors flex-shrink-0 ${
               filter === val ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600'
             }`}>
             {label}
