@@ -27,13 +27,19 @@ export default function Dashboard() {
 
   async function fetchTransactions() {
     const now = new Date()
-    const startOfMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`
+    const y = now.getFullYear()
+    const m = now.getMonth() + 1
+    const start = `${y}-${String(m).padStart(2, '0')}-01`
+    const endY = m === 12 ? y + 1 : y
+    const endM = m === 12 ? 1 : m + 1
+    const end = `${endY}-${String(endM).padStart(2, '0')}-01`
 
     const { data, error } = await supabase
       .from('transactions')
       .select('*, categories(name)')
       .eq('household_id', profile.household_id)
-      .gte('date', startOfMonth)
+      .gte('date', start)
+      .lt('date', end)
       .order('date', { ascending: false })
     if (!error) setTransactions(data || [])
     setLoading(false)

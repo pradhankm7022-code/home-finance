@@ -132,7 +132,10 @@ export default function Reports() {
     let start, end
     if (mode === 'monthly') {
       start = `${month}-01`
-      end = new Date(new Date(start).getFullYear(), new Date(start).getMonth() + 1, 1).toISOString().slice(0, 10)
+      const [y, m] = month.split('-').map(Number)
+      const endY = m === 12 ? y + 1 : y
+      const endM = m === 12 ? 1 : m + 1
+      end = `${endY}-${String(endM).padStart(2, '0')}-01`
     } else {
       start = `${year}-01-01`
       end = `${Number(year) + 1}-01-01`
