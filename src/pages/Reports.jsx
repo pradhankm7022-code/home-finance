@@ -36,7 +36,7 @@ function MonthBarChart({ title, transactions, type, categoryFilter, fmt }) {
   const data = MONTHS.map((name, i) => ({
     name,
     amount: filtered
-      .filter(t => new Date(t.date).getMonth() === i)
+      .filter(t => Number(t.date.slice(5, 7)) - 1 === i)
       .reduce((s, t) => s + Number(t.amount), 0)
   }))
 
