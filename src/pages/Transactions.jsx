@@ -379,7 +379,7 @@ export default function Transactions() {
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-gray-800 truncate">{t.description || t.categories?.name}</p>
                     <p className="text-xs text-gray-400">
-                      {t.categories?.name} · {new Date(t.date).toLocaleDateString()}
+                      {t.categories?.name} · {new Date(`${t.date}T00:00:00`).toLocaleDateString()}
                       {isSplitRow
                         ? ` · ${memberCount} members · by ${splitObj?.created_by === user.id ? 'you' : (splitObj?.creatorName || 'Unknown')}`
                         : ` · ${t.profiles?.name}`}
