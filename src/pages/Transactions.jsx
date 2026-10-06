@@ -185,7 +185,8 @@ export default function Transactions() {
     } else {
       const payload = { description: form.description, amount: totalAmount, category_id: categoryId, type: form.type, date: form.date, household_id: profile.household_id, user_id: user.id, created_by: user.id }
       if (editing) {
-        const { error } = await supabase.from('transactions').update(payload).eq('id', editing.id)
+        const editPayload = { description: form.description, amount: totalAmount, category_id: categoryId, type: form.type, date: form.date }
+        const { error } = await supabase.from('transactions').update(editPayload).eq('id', editing.id)
         if (error) { setSaveError(error.message); return }
       } else {
         const { error } = await supabase.from('transactions').insert(payload)
