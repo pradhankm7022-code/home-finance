@@ -41,7 +41,7 @@ export default function Settings() {
     setCatError('')
     const newName = editingName.trim()
     if (!newName) return
-    const { error } = await supabase.from('categories').update({ name: newName }).eq('id', id)
+    const { error } = await supabase.from('categories').update({ name: newName }).eq('id', id).eq('household_id', profile.household_id)
     if (error) { setCatError(error.message); return }
     setEditingCat(false)
     await fetchCategories()
